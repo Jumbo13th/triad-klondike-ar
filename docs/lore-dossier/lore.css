@@ -1,0 +1,145 @@
+/* Lore dossier additions on top of print.css: the dossier reuses the shared page chrome,
+   cover, section heads and table of contents unchanged, and only needs its own prose
+   blocks. Every size comes from the print.css tokens. */
+
+.prose p {
+  font-size: var(--fs-lead);
+  line-height: 1.55;
+  margin-bottom: var(--sp-3);
+  max-width: 160mm;
+}
+
+/* Opening paragraphs keep the body size: a larger intro reads as an error in sections
+   that are only a few paragraphs long */
+.prose p.lead {
+  font-size: var(--fs-lead);
+  line-height: 1.55;
+  margin-bottom: var(--sp-3);
+}
+
+.ru {
+  color: var(--ink-soft);
+}
+
+/* Seven entries only: the list runs to the same right edge as the head rule */
+.toc {
+  max-width: none;
+}
+
+/* Dated entries: the year column follows the rule-number column of the rules edition */
+.timeline,
+.locations {
+  display: grid;
+  gap: var(--sp-3) var(--sp-3);
+  margin: var(--sp-2) 0 var(--sp-4);
+}
+
+.timeline {
+  grid-template-columns: 28mm 1fr;
+}
+
+.locations {
+  grid-template-columns: 36mm 1fr;
+}
+
+.timeline .y,
+.locations .n {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  padding-top: 0.8mm;
+}
+
+.locations .n {
+  color: var(--ink);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.locations .n .geo {
+  color: var(--ink-soft);
+  display: block;
+  font-size: var(--fs-meta);
+  font-weight: normal;
+  letter-spacing: 0.12em;
+  margin-top: 0.6mm;
+}
+
+.timeline .t,
+.locations .t {
+  font-size: var(--fs-lead);
+  line-height: 1.5;
+  max-width: 132mm;
+}
+
+/* Company entries: same label style as the block titles of the rules edition */
+.fac {
+  margin: var(--sp-4) 0 var(--sp-4);
+}
+
+/* The first company entry follows running text; the first entry gets the wider gap */
+p + .fac {
+  margin-top: var(--sp-5);
+}
+
+.fac h3 {
+  border-bottom: 0.7px solid var(--light-line);
+  color: #35332e;
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  font-weight: bold;
+  letter-spacing: 0.14em;
+  margin-bottom: var(--sp-2);
+  padding-bottom: 1.2mm;
+  text-transform: uppercase;
+}
+
+.fac p:last-child {
+  margin-bottom: 0;
+}
+
+/* Closing verse: the design-intent note of the rules edition, set in italic */
+.quote {
+  border-left: 1.6mm solid var(--rail);
+  color: var(--ink-soft);
+  font-size: var(--fs-lead);
+  font-style: italic;
+  line-height: 1.6;
+  margin: var(--sp-5) 0 0 calc(var(--rn-width) + var(--sp-2));
+  padding: var(--sp-1) var(--sp-3);
+}
+
+.epigraph {
+  color: var(--ink-soft);
+  font-size: var(--fs-lead);
+  font-style: italic;
+  line-height: 1.6;
+  margin-top: 16mm;
+}
+
+.epigraph .who {
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: var(--fs-meta);
+  font-style: normal;
+  letter-spacing: 0.16em;
+}
+
+.end-mark {
+  margin-top: 12mm;
+}
+
+.end-mark .stamp {
+  margin-top: 0;
+}
+
+.cover-stamps {
+  display: flex;
+  gap: var(--sp-4);
+}
+
+.cover-stamps .stamp {
+  margin-top: 10mm;
+}

@@ -1,0 +1,549 @@
+@page {
+  size: A4;
+  margin: 0;
+}
+
+/* Palette and type scale. Every size on the page comes from these tokens. */
+:root {
+  --paper: #d8d4ca;
+  --paper-dark: #ccc7bb;
+  --ink: #1c1b18;
+  --ink-soft: #57534b;
+  --rail: #292824;
+  --accent: #8a3028;
+  --line: #777269;
+  --light-line: #aaa499;
+
+  --serif: Georgia, "Times New Roman", serif;
+  --mono: "Courier New", monospace;
+
+  --fs-body: 9.3pt;
+  --fs-lead: 10.4pt;
+  --fs-meta: 7.4pt;
+  --fs-label: 7.8pt;
+  --fs-title: 16pt;
+  --fs-table: 8.5pt;
+
+  --lh-body: 1.42;
+
+  --sp-1: 1.2mm;
+  --sp-2: 2mm;
+  --sp-3: 3mm;
+  --sp-4: 4.5mm;
+  --sp-5: 6mm;
+
+  --rn-width: 11mm;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background: #b9b6ae;
+}
+
+body {
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+strong,
+b {
+  font-weight: bold;
+}
+
+/* Page chrome */
+.page {
+  background: var(--paper);
+  break-after: page;
+  break-inside: avoid;
+  height: 297mm;
+  overflow: hidden;
+  padding: 16mm 17mm 18mm 25mm;
+  page-break-after: always;
+  position: relative;
+  width: 210mm;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.page:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+.edge-band {
+  background: var(--rail);
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 7mm;
+}
+
+.file-ref,
+.footer {
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: var(--fs-meta);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.file-ref {
+  position: absolute;
+  right: 17mm;
+  top: 7mm;
+}
+
+.footer {
+  align-items: baseline;
+  bottom: 7mm;
+  display: flex;
+  justify-content: space-between;
+  left: 25mm;
+  position: absolute;
+  right: 17mm;
+}
+
+.footer [data-page-number],
+.toc .pg {
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+  text-align: right;
+}
+
+/* Section header: one block, reused at the top of a page and inside a page */
+.section-head {
+  margin-bottom: var(--sp-4);
+}
+
+.section-head.inner {
+  margin-top: var(--sp-5);
+}
+
+/* A continued section repeats only its kicker: the title appears once, where it starts */
+.section-head.cont {
+  margin-bottom: var(--sp-3);
+}
+
+.section-head.cont .section-kicker {
+  margin-bottom: 1.8mm;
+}
+
+.section-kicker {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  font-weight: bold;
+  letter-spacing: 0.18em;
+  margin-bottom: 1.4mm;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: normal;
+}
+
+h2.section-title {
+  font-family: var(--mono);
+  font-size: var(--fs-title);
+  letter-spacing: 0.1em;
+  line-height: 1.15;
+  margin-bottom: 1.6mm;
+  text-transform: uppercase;
+}
+
+.section-subtitle {
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  margin-bottom: var(--sp-3);
+  text-transform: uppercase;
+}
+
+.section-rule {
+  border: 0;
+  border-top: 1.2px solid var(--ink);
+}
+
+h3.block-title {
+  color: #35332e;
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  font-weight: bold;
+  letter-spacing: 0.12em;
+  margin: var(--sp-4) 0 var(--sp-2);
+  text-transform: uppercase;
+}
+
+/* Text */
+p {
+  margin-bottom: var(--sp-2);
+}
+
+.lead {
+  font-size: var(--fs-lead);
+  line-height: 1.48;
+  margin-bottom: var(--sp-3);
+}
+
+.muted {
+  color: var(--ink-soft);
+}
+
+ul,
+ol {
+  margin: var(--sp-1) 0 var(--sp-2);
+}
+
+ul {
+  list-style: none;
+}
+
+li {
+  line-height: 1.38;
+  margin-bottom: var(--sp-1);
+}
+
+ul > li {
+  padding-left: 4.5mm;
+  position: relative;
+}
+
+ul > li::before {
+  color: var(--accent);
+  content: "—";
+  left: 0;
+  position: absolute;
+}
+
+ol {
+  padding-left: 5.5mm;
+}
+
+ol > li {
+  padding-left: 1.2mm;
+}
+
+/* Numbered rule: the only normative unit on the page */
+.rule {
+  display: grid;
+  gap: 0 var(--sp-2);
+  grid-template-columns: var(--rn-width) 1fr;
+  margin-bottom: var(--sp-3);
+}
+
+.rule .rn {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  padding-top: 0.6mm;
+}
+
+.rule .rb > :last-child {
+  margin-bottom: 0;
+}
+
+.rule .rb > ul:last-child,
+.rule .rb > ol:last-child {
+  margin-bottom: 0;
+}
+
+.rule .rt {
+  font-weight: bold;
+}
+
+/* Emphasised rule: irreversible or enforcement consequences */
+.rule.key .rb {
+  background: var(--paper-dark);
+  border-left: 1.6mm solid var(--accent);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+/* Design-intent note attached to a section (not a numbered rule) */
+.note {
+  border-left: 1.6mm solid var(--rail);
+  color: var(--ink-soft);
+  margin: var(--sp-3) 0 var(--sp-3) calc(var(--rn-width) + var(--sp-2));
+  padding: var(--sp-1) var(--sp-3);
+}
+
+.note p:last-child {
+  margin-bottom: 0;
+}
+
+/* Tables */
+table {
+  border-collapse: collapse;
+  margin: var(--sp-1) 0 var(--sp-2);
+  width: 100%;
+}
+
+th,
+td {
+  border: 0.7px solid var(--line);
+  font-size: var(--fs-table);
+  line-height: 1.34;
+  padding: 1.8mm 2.2mm;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: var(--paper-dark);
+  color: #35332e;
+  font-family: var(--mono);
+  font-size: var(--fs-meta);
+  font-weight: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Paired panes and state boxes inside a rule body */
+.pair {
+  display: grid;
+  gap: var(--sp-3);
+  grid-template-columns: 1fr 1fr;
+  margin: var(--sp-1) 0 var(--sp-2);
+}
+
+.pane {
+  border-top: 1.2px solid var(--ink);
+  padding-top: 1.6mm;
+}
+
+.pane h4 {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--fs-meta);
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--sp-1);
+  text-transform: uppercase;
+}
+
+.pane p,
+.pane li {
+  font-size: var(--fs-table);
+}
+
+.pane ul {
+  margin-bottom: 0;
+}
+
+.states {
+  display: grid;
+  gap: var(--sp-2);
+  grid-template-columns: repeat(3, 1fr);
+  margin: var(--sp-1) 0 var(--sp-2);
+}
+
+.state {
+  border: 1px solid var(--line);
+  padding: 2.2mm 2.6mm;
+}
+
+.state h4 {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--fs-meta);
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--sp-1);
+  text-transform: uppercase;
+}
+
+.state p {
+  font-size: var(--fs-table);
+  line-height: 1.34;
+  margin: 0;
+}
+
+/* Table of contents: its own page, one row per canonical section */
+.toc {
+  display: grid;
+  grid-template-columns: 1fr;
+  list-style: none;
+  margin: var(--sp-3) 0;
+  max-width: 130mm;
+}
+
+.toc li {
+  align-items: baseline;
+  display: flex;
+  font-family: var(--mono);
+  font-size: 8.8pt;
+  letter-spacing: 0.06em;
+  margin-bottom: 3.2mm;
+  padding-left: 0;
+  text-transform: uppercase;
+}
+
+.toc li::before {
+  content: none;
+}
+
+.toc .n {
+  color: var(--accent);
+  flex: 0 0 8mm;
+}
+
+.toc .dots {
+  border-bottom: 1px dotted var(--line);
+  flex: 1;
+  margin: 0 2mm;
+  min-width: 4mm;
+}
+
+.toc .pg {
+  color: var(--ink-soft);
+}
+
+/* Cover */
+.cover {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 14mm;
+  padding-top: 12mm;
+}
+
+.cover-top,
+.cover-bottom {
+  color: var(--ink-soft);
+  display: flex;
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  justify-content: space-between;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.cover-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.cover-brand {
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 11pt;
+  letter-spacing: 0.52em;
+  margin-bottom: 8mm;
+  text-transform: uppercase;
+}
+
+.cover-title {
+  font-family: var(--mono);
+  font-size: 41pt;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  margin-bottom: 3mm;
+  text-transform: uppercase;
+}
+
+.cover-alt {
+  color: #35332e;
+  font-family: var(--mono);
+  font-size: 12pt;
+  letter-spacing: 0.36em;
+  margin-bottom: 10mm;
+  text-transform: uppercase;
+}
+
+.cover-meta {
+  color: #35332e;
+  font-family: var(--mono);
+  font-size: 9.2pt;
+  letter-spacing: 0.11em;
+  line-height: 1.9;
+  text-transform: uppercase;
+}
+
+.stamp {
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 8.7pt;
+  font-weight: bold;
+  letter-spacing: 0.22em;
+  margin-top: 10mm;
+  padding: 1.6mm 3mm;
+  text-transform: uppercase;
+}
+
+.cover-note {
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 9pt;
+  line-height: 1.5;
+  margin-top: 11mm;
+  max-width: 145mm;
+  padding-top: 3mm;
+}
+
+.colophon {
+  color: var(--ink-soft);
+  font-size: var(--fs-table);
+  margin-top: var(--sp-4);
+}
+
+/* Russian edition: Cyrillic runs about a tenth longer, so body type steps down one notch
+   and the monospace headers track tighter */
+html[lang="ru"] body {
+  font-size: 9.1pt;
+}
+
+html[lang="ru"] h2.section-title {
+  font-size: 15pt;
+  letter-spacing: 0.06em;
+}
+
+html[lang="ru"] .section-subtitle,
+html[lang="ru"] .section-kicker,
+html[lang="ru"] .toc li {
+  letter-spacing: 0.1em;
+}
+
+html[lang="ru"] .cover-title {
+  font-size: 38pt;
+  letter-spacing: 0.06em;
+}
+
+html[lang="ru"] .cover-alt {
+  letter-spacing: 0.26em;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff;
+  }
+
+  body {
+    padding: 0;
+  }
+
+  .page {
+    margin: 0;
+  }
+}
