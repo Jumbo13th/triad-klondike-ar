@@ -1,0 +1,42 @@
+TK_GameMode : "{0F307326459A1395}Prefabs/MP/Modes/GameMode_Base.et" {
+ ID "56B2B479C6B96951"
+ components {
+  TK_BackendComponent "{3FD656CE4CD4D0EE}" {
+  }
+  SCR_RespawnSystemComponent "{56B2B4793051E7C9}" {
+   m_SpawnLogic SCR_MenuSpawnLogic "{60B73D7B350A9E85}" {
+   }
+  }
+ }
+ coords 0 0 0
+ PlayerControllerPrefab "{FFE668EAE606F801}Prefabs/Characters/Core/TK_PlayerController.et"
+ {
+  SCR_FactionManager "45AC77309C996FAF" : "{4A188E44289B9A50}Prefabs/MP/Managers/Factions/FactionManager_Editor.et" {
+   ID "329F50308F14A494"
+   coords 0 0 0
+   Factions {
+    SCR_Faction "{56DEAC40D2DBC8B1}" {
+     m_bIsPlayable 1
+    }
+    SCR_Faction "{56DEAC40D3C2E623}" {
+     m_bIsPlayable 1
+    }
+   }
+  }
+  SCR_LoadoutManager "90376D6BFCE319CA" {
+   ID "67FE059A1D371824"
+   components {
+    RplComponent "{8DE409A5B5D51A06}" {
+     Streamable Disabled
+    }
+   }
+   coords 0 0 0
+   m_aPlayerLoadouts {
+    SCR_FactionPlayerLoadout "{63B8613C21B9A951}" : "{7C7C65FD583E6612}Configs/Loadouts/US/Regular/Loadout_US_Rifleman.conf" {
+    }
+    SCR_FactionPlayerLoadout "{E4C77B2A8A4E79F2}" : "{5F9034642E99437D}Configs/Loadouts/USSR/Regular/Loadout_USSR_Rifleman.conf" {
+    }
+   }
+  }
+ }
+}

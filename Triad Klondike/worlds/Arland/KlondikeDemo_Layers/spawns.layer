@@ -1,0 +1,72 @@
+SCR_SpawnPoint SpawnUS1 {
+ components {
+  SCR_MapDescriptorComponent "{E1337306B613DDEA}" {
+   VisibleOnMap 0
+   MainType Spawnpoint
+  }
+  RplComponent "{53C87C71B69A911A}" {
+   Streamable Disabled
+  }
+  Hierarchy "{C9318672FFFF6BBE}" {
+  }
+ }
+ coords 1675.5 37.9 2588.2
+ m_sFaction "US"
+ m_Info SCR_UIInfo "{5E5B48D329413901}" {
+  Name "US camp"
+ }
+}
+SCR_SpawnPoint SpawnUS2 {
+ components {
+  SCR_MapDescriptorComponent "{A22E4995860B2918}" {
+   VisibleOnMap 0
+   MainType Spawnpoint
+  }
+  RplComponent "{F9A43E38B3715D21}" {
+   Streamable Disabled
+  }
+  Hierarchy "{2797EB94B8C0A470}" {
+  }
+ }
+ coords 1669.8 37.9 2589.6
+ m_sFaction "US"
+ m_Info SCR_UIInfo "{72FA192ED58D352C}" {
+  Name "US camp"
+ }
+}
+SCR_SpawnPoint SpawnUSSR1 {
+ components {
+  SCR_MapDescriptorComponent "{9BF198DA6EE0D18A}" {
+   VisibleOnMap 0
+   MainType Spawnpoint
+  }
+  RplComponent "{A68A6FA598DE72B1}" {
+   Streamable Disabled
+  }
+  Hierarchy "{8A05028F0208E7B8}" {
+  }
+ }
+ coords 1840.2 26.5 1938.4
+ m_sFaction "USSR"
+ m_Info SCR_UIInfo "{78005E90D7DDF135}" {
+  Name "USSR camp"
+ }
+}
+SCR_SpawnPoint SpawnUSSR2 {
+ components {
+  SCR_MapDescriptorComponent "{F7464606E1F3E85F}" {
+   VisibleOnMap 0
+   MainType Spawnpoint
+  }
+  RplComponent "{F3B6F4EA7C8E69BD}" {
+   Streamable Disabled
+  }
+  Hierarchy "{4A1900C60B62B8CF}" {
+  }
+ }
+ coords 1834.6 26.5 1940.1
+ m_sFaction "USSR"
+ m_Info SCR_UIInfo "{491A3D46E1029C68}" {
+  Name "USSR camp"
+ }
+}
