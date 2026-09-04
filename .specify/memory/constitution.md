@@ -1,16 +1,17 @@
 <!--
 Sync Impact Report
-- Version: 1.0.0 → 1.1.0 (MINOR: guidance added, no principle redefined)
-- Added: Principle I source 3 (the Conflict game mode as the in-game reference for
-  prefabs, layouts and UI flows; Lite Lobby moves to source 4); section "User
-  Interface" (UI/UX for players and operators, Arma Reforger styling, no
-  self-referential design); Development Workflow bullet "Audits and reviews have done
+- Version: 1.1.0 → 1.2.0 (MINOR: guidance added, no principle redefined)
+- Added: Principle VI bullet "The backend logs what it decides, not what it sees"
+  (one line per decision: start, connect, command, configuration change, unreadable
+  request; no health polls or reads, nothing twice).
+- Previous (1.0.0 → 1.1.0): Principle I source 3 (the Conflict game mode as the
+  in-game reference for prefabs, layouts and UI flows; Lite Lobby moved to source 4);
+  section "User Interface"; Development Workflow bullet "Audits and reviews have done
   criteria".
 - Templates requiring updates: none; plan-template.md's constitution check reads this
-  file at runtime. Add a "User Interface" row to the next plan's check when a feature
-  has a screen.
-- Follow-up TODOs: none. The v1.0.0 TODO (TECHNICAL-DESIGN §2.5, §4, §16.3, §18.2)
-  was closed by TECHNICAL-DESIGN v1.1 on 2026-09-03.
+  file at runtime. Backend features add a "logging" row to their constitution check.
+- Follow-up TODOs: none. Feature 001's backend was brought in line with the logging
+  bullet on 2026-09-04.
 -->
 
 # Triad: Klondike Constitution
@@ -155,6 +156,14 @@ contracts. This boundary runs through every feature and every plan.
   nothing about the website.
 - The backend contract is versioned. At boot the game checks the version and refuses
   consequential play against a contract it does not know.
+- The backend logs what it decides, not what it sees. One line per decision: every
+  start with the values it runs on, every connect with identity and role, every
+  command with operation id, type, actor, target, outcome and reason code, every
+  configuration change, and every request it could not understand. Health polls and
+  reads are not logged, no event is logged twice, and a line carries only what an
+  operator scanning a console needs to know what happened and why; the audit table
+  holds the detail. Logging that does not answer "what did the backend do and why" is
+  noise and is not written.
 
 ### VII. Comments and Code Hygiene
 
@@ -427,4 +436,4 @@ The operator ratifies every amendment. Rules in `RULES.md` and constraints in
 `TECHNICAL-DESIGN.md` change through their own source order; this document only
 changes when the way of working changes.
 
-**Version**: 1.1.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-04
+**Version**: 1.2.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-04

@@ -126,6 +126,9 @@ class TK_CommandBase : JsonApiStruct
 	int expected_revision;
 	int config_revision;
 	string reason;
+	// True when the target has a live session, so the receipt is pushed at once and
+	// the backend need not replay it on the next connect.
+	bool target_online;
 
 	void TK_CommandBase()
 	{
@@ -137,6 +140,7 @@ class TK_CommandBase : JsonApiStruct
 		RegV("expected_revision");
 		RegV("config_revision");
 		RegV("reason");
+		RegV("target_online");
 	}
 }
 

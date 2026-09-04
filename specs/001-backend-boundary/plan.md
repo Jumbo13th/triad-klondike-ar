@@ -61,6 +61,7 @@ rows at a time; 5 game scripts, 1 layout, 2 config overrides, 1 string table, 1 
 | Persistence and data | Two stores, one split: backend owns every logical record; the game persists nothing for this feature; mutations carry actor, operation id, target, expected revision | pass |
 | Documentation and language | String table with EN and RU written from meaning; reason codes are keys; `TECHNICAL-DESIGN.md` v1.1 already revised | pass |
 | Testability and the demo world | Quickstart scenarios A–F; runtime values changed from the panel; backend flags produce every boundary state; demo world is a local dedicated server | pass |
+| Backend logging (VI, v1.2.0) | one line per start, connect, command (op id, type, actor, target, outcome, reason code), unreadable request; no health or read lines | pass |
 | Development workflow | Rules implemented: 7.1 (money is personal, survives death, removed by wipe), 17.2 (receipts, refusal reasons), 17.3 (cockpit exists), 17.4 (cockpit commands are domain operations with audit), 17.5 (compensation is an explicit operation). Design sections: 2.1, 2.3, 2.5, 4, 4.2, 4.3 step 2, 15.1, 16.1, 16.4 | pass |
 
 ### Replication classification (Principle V)

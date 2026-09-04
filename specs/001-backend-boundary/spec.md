@@ -35,6 +35,22 @@ caller.
   second command while one is pending is refused at once with a stable "busy" reason
   and no backend call.
 
+### Session 2026-09-04
+
+- Q: The local dedicated server has no backend reach, so every player audits with an
+  empty identity and the whole feature is refused; real servers always give identities.
+  What now? → A: a development flag in the game's backend config
+  (`DevIdentityFromName`, default off) substitutes an identity derived from the player
+  name, using the same derivation the engine applies to non-dedicated play. Off, the
+  fail-closed behaviour is unchanged.
+- Q: A receipt pushed live to an online player was replayed on every later connect.
+  How is delivery settled? → A: the compensation carries whether the target has a
+  live session; when it does, the backend records the receipt as delivered at
+  creation, so connect replays only receipts created while the player was away. No
+  extra call. The website reads the ledger and is unaffected. Accepted
+  consequence: a receipt whose command was in flight when the game server died is
+  never shown; the ledger row stands.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The server proves its backend before letting money move (Priority: P1)
@@ -171,10 +187,15 @@ follow each change.
 - A player's command and an operator's correction race on the same wallet: exactly one
   wins the revision; the other is refused with the new revision. A player's own second
   command never races, because it is refused as busy while the first is pending.
+- A player's connect fails because the backend is away at join time: the player is
+  inside the world without a record; the game repeats the connect for every such
+  player the moment the boundary becomes ready again, so no rejoin is needed
+  (observed 2026-09-04 when the backend was closed mid-test).
 - The game receives an identity it cannot use (empty or null stable id): the player is
-  treated as not audited; no record is created from a name or connection id. This is
-  also what non-dedicated play produces, so the demo world runs on a local dedicated
-  server and there is no substitute identity path.
+  treated as not audited; no record is created from a name or connection id. A
+  dedicated server without backend reach and non-dedicated play both produce this, so
+  the development flag of FR-020 exists; without it the feature is not testable
+  locally.
 
 ## Requirements *(mandatory)*
 
@@ -236,6 +257,15 @@ follow each change.
 - **FR-019**: A player MUST have at most one consequential command in flight; a second
   command while one is pending is refused immediately with a stable "busy" reason and
   causes no backend call.
+- **FR-020**: The game MUST offer a development-only substitute for a missing audited
+  identity, switched on by a flag in the server's backend config that is off by
+  default: the identity is derived from the player name exactly as the engine derives
+  it for non-dedicated play, so it is stable across sessions and identical to the one
+  Workbench play would give. Clients of one platform account share a name, so a
+  joiner whose derived identity is already held by a connected or connecting session
+  is derived from the name with a join counter ("Name#2", "Name#3"); join order
+  decides which client is which. With the flag on the server MUST log a warning at
+  start and at every substitution; with the flag off FR-009 applies unchanged.
 
 ### Key Entities
 
@@ -290,8 +320,10 @@ follow each change.
 - The cockpit panel of this feature is the first slice of the launch cockpit (RULES
   17.3): it opens only for the operator role and later features add their views to it
   rather than building a second one.
-- The demo world is a local dedicated server with the backend beside it, so testers
-  hold audited identities; Workbench play cannot exercise this feature.
+- The demo world is a local dedicated server with the backend beside it. That server
+  has no backend reach, so testers hold development identities (FR-020) that are
+  stable across sessions; a real server audits real identities and the flag stays off.
+  With the flag on, Workbench play exercises the feature too.
 - No website, RCON namespace, host supervisor, backup or persistence spike is in scope.
 - The backend keeps its records durably across its own restarts; how is its concern,
   not the game's.

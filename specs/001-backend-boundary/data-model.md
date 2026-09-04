@@ -11,7 +11,7 @@ timestamp is UTC RFC 3339 text.
 | Field | Type | Rule |
 |---|---|---|
 | uuid | text, unique | the audited stable identity; never a name or connection id |
-| role | text | `player` or `operator`; seeded from configuration |
+| role | text | `player` or `operator`; set from the seed's operator list at every backend start |
 | display_name | text | last name seen at connect; informational only |
 | created_at | text | first connect |
 | last_connect_at | text | updated on every connect |

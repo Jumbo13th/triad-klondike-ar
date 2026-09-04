@@ -19,13 +19,17 @@ Every decision below names its source. Engine facts come from the pinned game sc
   Judge by HTTP code first, then by rest result (same file, `OnVerificationError`).
 - **JSON.** `JsonApiStruct` (`GameLib/generated/online/JsonApiStruct.c`): `RegV` in the
   constructor, `ExpandFromRAW(string)` to parse (no error return; unknown fields are
-  ignored), `AsString()` to encode. Registered names are case-sensitive.
+  ignored), `Pack()` then `AsString()` to encode (`AsString()` alone yields `{}`),
+  `PackToFile` to write a fresh file. Registered names are case-sensitive.
 - **Identity.** `SCR_BaseGameModeComponent.OnPlayerAuditSuccess(int playerId)` is
   dispatched by `SCR_BaseGameMode` to every game-mode component; it is the first moment
   `GetGame().GetBackendApi().GetPlayerIdentityId(playerId)` is reliable, and only on the
   server (`SCR_PlayerIdentityUtils.c`). On a non-dedicated session the vanilla utility
-  synthesises an id from the player name. Klondike never uses that path: the component
-  reads the backend id directly and treats empty as not ready.
+  synthesises an id from the player name (`00bbbddd-` prefix, three hashed name
+  slices); on a dedicated server without backend reach it returns empty and reports the
+  server as misconfigured. Klondike reads the backend id directly and treats empty as
+  not ready; with `DevIdentityFromName` on (2026-09-04) it applies the same derivation
+  itself, since the vanilla one is limited to non-dedicated sessions.
 - **Operation ids.** `UUID.GenV4()` (`Core/generated/Types/UUID.c`) generates a random
   v4 id on any machine, so the client can mint the operation id as the design requires.
 - **Owner RPC channel.** A `ScriptComponent` on the PlayerController is the only entity
@@ -118,7 +122,8 @@ Rationale: TECHNICAL-DESIGN 2.1 and 4.2, FR-003, FR-004, FR-007.
 ### D6. Player connect
 
 Decision: on `OnPlayerAuditSuccess` the server reads the identity, refuses to proceed
-if it is empty, then `POST /v1/players/{uuid}/connect`. The backend creates the player
+if it is empty (unless the development flag substitutes a name-derived id, FR-020),
+then `POST /v1/players/{uuid}/connect`. The backend creates the player
 record and a zero wallet if absent (idempotent), returns the role, the wallet and every
 undelivered receipt, and marks those receipts delivered in the same transaction. The
 game caches `{uuid, role}` per player id and pushes the receipts to the owner.

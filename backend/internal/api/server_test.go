@@ -70,12 +70,17 @@ func TestHealthAnnouncesContractAndConfig(t *testing.T) {
 	}
 }
 
-func TestDelayFlagDelaysEveryAnswer(t *testing.T) {
+func TestDelayFlagDelaysCommandsOnly(t *testing.T) {
 	srv := newServer(t, domain.ContractVersion, 150*time.Millisecond)
 	start := time.Now()
 	call(t, srv, "GET", "/v1/health", nil, nil)
+	if time.Since(start) >= 150*time.Millisecond {
+		t.Fatal("health answer was delayed")
+	}
+	start = time.Now()
+	call(t, srv, "POST", "/v1/commands", map[string]any{"op_id": "x", "type": "wallet.compensate", "actor": "a", "payload": map[string]any{"amount": 1}}, nil)
 	if time.Since(start) < 150*time.Millisecond {
-		t.Fatal("answer was not delayed")
+		t.Fatal("command answer was not delayed")
 	}
 }
 

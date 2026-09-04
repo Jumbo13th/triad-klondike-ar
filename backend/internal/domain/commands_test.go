@@ -264,3 +264,36 @@ func TestPayloadHashIsCanonical(t *testing.T) {
 		t.Fatalf("hashes: %s %s %s", a, b, c)
 	}
 }
+
+func TestLivePushedReceiptIsNotReplayedOnConnect(t *testing.T) {
+	svc, _ := newService(t)
+
+	online := compensate("op-online", 100, 1, "seen live")
+	online.TargetOnline = true
+	if answer, err := svc.Execute(online); err != nil || answer.Status != StatusAccepted {
+		t.Fatalf("online credit: %+v, %v", answer, err)
+	}
+	if answer, err := svc.Execute(compensate("op-away", 50, 2, "while away")); err != nil || answer.Status != StatusAccepted {
+		t.Fatalf("away credit: %+v, %v", answer, err)
+	}
+
+	res, err := svc.Connect(player, "Ivanov")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Receipts) != 1 || res.Receipts[0].OpID != "op-away" {
+		t.Fatalf("connect should replay only the receipt created while away, got %+v", res.Receipts)
+	}
+}
+
+func TestTargetOnlineAcceptsEngineNumbers(t *testing.T) {
+	for raw, want := range map[string]bool{"true": true, "1": true, "false": false, "0": false} {
+		var cmd Command
+		if err := json.Unmarshal([]byte(`{"op_id":"x","target_online":`+raw+`}`), &cmd); err != nil {
+			t.Fatalf("%s: %v", raw, err)
+		}
+		if bool(cmd.TargetOnline) != want {
+			t.Fatalf("%s: got %v", raw, cmd.TargetOnline)
+		}
+	}
+}

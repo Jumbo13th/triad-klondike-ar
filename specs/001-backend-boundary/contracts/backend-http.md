@@ -67,9 +67,16 @@ someone else; `reason` required for cockpit types):
   "expected_revision": 4,
   "config_revision": 3,
   "reason": "missing payout 2026-09-01",
-  "payload": { "amount": 200 }
+  "payload": { "amount": 200 },
+  "target_online": true
 }
 ```
+
+`target_online` (optional, `wallet.compensate` only) says the target has a live
+session on the game server. The game then pushes the receipt at once, so the backend
+records it as delivered at creation and the next connect does not replay it. It sits
+outside the payload so a retry that finds the target gone is still the same
+operation.
 
 Types and payloads:
 
@@ -137,10 +144,12 @@ this; the game forwards rows only to operators.
 | `-listen 127.0.0.1:8471` | listen address; refuses to start on a non-loopback address |
 | `-data <dir>` | database and seed file directory |
 | `-announce-contract <string>` | announce this contract version in `/v1/health` |
-| `-delay <duration>` | delay every answer by this much (for example `7s`) |
+| `-delay <duration>` | delay every `POST /v1/commands` answer by this much (for example `7s`); health and reads stay instant |
 
-Seed file `klondiked.json` in the data directory, read once when the database is
-created:
+Seed file `klondiked.json` in the data directory, read at every start. The operator
+list is an allowlist applied each start (listed identities become operators, created
+if unknown; every other operator becomes a player); the runtime values are taken only
+when the database is new, because afterwards they carry a revision:
 
 ```json
 { "operators": ["<uuid>", "<uuid>"], "answer_timeout_s": 5, "recheck_interval_s": 15 }

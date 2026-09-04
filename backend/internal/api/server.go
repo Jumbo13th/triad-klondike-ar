@@ -25,7 +25,9 @@ type server struct {
 }
 
 // New builds the handler. announce is the contract version /v1/health reports and
-// delay is added to every answer; both exist for the demo world.
+// delay is added to every command answer; both exist for the demo world. Health and
+// reads stay instant: the game runs its requests one after another on one context,
+// so a delayed health poll would push every queued request past the answer limit.
 func New(svc *domain.Service, announce string, delay time.Duration) http.Handler {
 	s := &server{svc: svc, announce: announce, delay: delay}
 	mux := http.NewServeMux()
@@ -39,9 +41,6 @@ func New(svc *domain.Service, announce string, delay time.Duration) http.Handler
 
 func (s *server) wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.delay > 0 {
-			time.Sleep(s.delay)
-		}
 		r.Body = http.MaxBytesReader(w, r.Body, maxBody)
 		next.ServeHTTP(w, r)
 	})
@@ -79,6 +78,7 @@ func (s *server) connect(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	log.Printf("connect %s %q role=%s receipts=%d", res.Player.UUID, req.DisplayName, res.Player.Role, len(res.Receipts))
 	reply(w, res)
 }
 
@@ -100,11 +100,21 @@ func (s *server) commands(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &cmd) {
 		return
 	}
+	// After the read, not before: the flag simulates a backend that has the command
+	// and answers late, so a caller that dies meanwhile still gets its row applied.
+	if s.delay > 0 {
+		time.Sleep(s.delay)
+	}
 	answer, err := s.svc.Execute(cmd)
 	if err != nil {
 		fail(w, err)
 		return
 	}
+	outcome := string(answer.Status)
+	if answer.ReasonCode != "" {
+		outcome += " " + string(answer.ReasonCode)
+	}
+	log.Printf("command %s op=%s actor=%s target=%s -> %s revision=%d", cmd.Type, cmd.OpID, cmd.Actor, cmd.Target, outcome, answer.Revision)
 	reply(w, answer)
 }
 
@@ -129,17 +139,39 @@ func (s *server) audit(w http.ResponseWriter, r *http.Request) {
 func decode(w http.ResponseWriter, r *http.Request, into any) bool {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "body too large", http.StatusRequestEntityTooLarge)
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			log.Printf("%s %s: body too large", r.Method, r.URL.Path)
+			failWith(w, http.StatusRequestEntityTooLarge, "body too large")
+			return false
+		}
+		log.Printf("%s %s: body not received: %v", r.Method, r.URL.Path, err)
+		failWith(w, http.StatusBadRequest, "body not received")
 		return false
 	}
 	if len(body) == 0 {
 		return true
 	}
 	if err := json.Unmarshal(body, into); err != nil {
-		http.Error(w, "malformed JSON", http.StatusBadRequest)
+		log.Printf("%s %s: malformed JSON: %v", r.Method, r.URL.Path, err)
+		failWith(w, http.StatusBadRequest, "malformed JSON: "+err.Error())
 		return false
 	}
 	return true
+}
+
+// The engine logs a failed request with the apiCode, uid and message fields of the
+// error body; answering in that shape puts the reason into the game's own log line.
+type errorBody struct {
+	APICode int    `json:"apiCode"`
+	UID     string `json:"uid"`
+	Message string `json:"message"`
+}
+
+func failWith(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(errorBody{APICode: status, Message: message})
 }
 
 func reply(w http.ResponseWriter, v any) {
@@ -151,9 +183,10 @@ func reply(w http.ResponseWriter, v any) {
 
 func fail(w http.ResponseWriter, err error) {
 	if errors.Is(err, domain.ErrBadRequest) {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("bad request: %v", err)
+		failWith(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	log.Printf("internal error: %v", err)
-	http.Error(w, "internal error", http.StatusInternalServerError)
+	failWith(w, http.StatusInternalServerError, "internal error")
 }

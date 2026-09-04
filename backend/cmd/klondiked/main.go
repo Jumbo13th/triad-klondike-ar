@@ -23,7 +23,7 @@ func main() {
 	listen := flag.String("listen", "127.0.0.1:8471", "address to listen on; must be a loopback address")
 	dataDir := flag.String("data", "data", "directory holding the database and the klondiked.json seed")
 	announce := flag.String("announce-contract", domain.ContractVersion, "contract version announced by /v1/health (demo-world control)")
-	delay := flag.Duration("delay", 0, "delay every answer by this duration (demo-world control)")
+	delay := flag.Duration("delay", 0, "delay every command answer by this duration; health and reads stay instant (demo-world control)")
 	flag.Parse()
 
 	if err := requireLoopback(*listen); err != nil {

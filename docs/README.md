@@ -16,4 +16,3 @@ pwsh -NoProfile -File .\docs\lore-dossier\build-lore-pdfs.ps1
 The script runs the layout check (page overflow, resolved contents) and writes both PDFs
 to `docs/`.
 
-Development setup (backend, dedicated server, checks): [DEVELOPMENT.md](DEVELOPMENT.md).

@@ -273,6 +273,11 @@ func (e *execution) compensate() (Answer, error) {
 		TotalAfter: receipt.TotalAfter, Reason: receipt.Reason, CreatedAt: e.now}); err != nil {
 		return Answer{}, err
 	}
+	if e.cmd.TargetOnline {
+		if err := e.tx.MarkReceiptDelivered(receipt.OpID, e.now); err != nil {
+			return Answer{}, err
+		}
+	}
 	wallet := Wallet{Total: w.Total, Reserved: w.Reserved, Revision: w.Revision}
 	after, _ := json.Marshal(wallet)
 	answer := Answer{Status: StatusAccepted, Revision: w.Revision, Wallet: &wallet, Receipt: &receipt}

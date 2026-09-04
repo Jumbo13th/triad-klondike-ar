@@ -18,6 +18,26 @@ type Command struct {
 	ConfigRevision   int64           `json:"config_revision"`
 	Reason           string          `json:"reason"`
 	Payload          json.RawMessage `json:"payload"`
+	// Only the game knows whether the target has a live session. When it does, the
+	// game pushes the receipt at once, so the backend records it as delivered and a
+	// later connect does not replay it. Outside the payload so a retry that finds the
+	// target gone is still the same operation.
+	TargetOnline Flag `json:"target_online,omitempty"`
+}
+
+// Flag is a boolean the engine may serialise as true/false or as 1/0.
+type Flag bool
+
+func (f *Flag) UnmarshalJSON(raw []byte) error {
+	switch string(raw) {
+	case "true", "1", `"true"`, `"1"`:
+		*f = true
+	case "false", "0", `"false"`, `"0"`, "null":
+		*f = false
+	default:
+		return fmt.Errorf("flag: %s is not a boolean", raw)
+	}
+	return nil
 }
 
 // Wallet is the current-player view of money.

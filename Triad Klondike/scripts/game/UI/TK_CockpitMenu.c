@@ -35,6 +35,9 @@ class TK_CockpitMenu : MenuBase
 	// same command; any other terminal answer clears it.
 	protected string m_sPendingOpId;
 	protected bool m_bPendingIsConfig;
+	// While an answer is outstanding a new press must not replace the pending operation,
+	// or the answer that arrives for it is dropped as unknown.
+	protected bool m_bAwaitingAnswer;
 	protected string m_sPendingTarget;
 	protected int m_iPendingAmount;
 	protected int m_iPendingTimeout;
@@ -284,6 +287,8 @@ class TK_CockpitMenu : MenuBase
 	{
 		if (!m_wAmountEdit || !m_wReasonEdit || !m_wWalletEdit)
 			return;
+		if (RefuseWhileAwaiting())
+			return;
 
 		string amountText = m_wAmountEdit.GetText();
 		amountText.TrimInPlace();
@@ -319,6 +324,8 @@ class TK_CockpitMenu : MenuBase
 	{
 		if (!m_wTimeoutEdit || !m_wIntervalEdit || !m_wReasonEdit)
 			return;
+		if (RefuseWhileAwaiting())
+			return;
 
 		string reason = m_wReasonEdit.GetText();
 		reason.TrimInPlace();
@@ -340,12 +347,23 @@ class TK_CockpitMenu : MenuBase
 	{
 		if (m_sPendingOpId == "")
 			return;
+		if (RefuseWhileAwaiting())
+			return;
 
 		SendPending();
 	}
 
+	protected bool RefuseWhileAwaiting()
+	{
+		if (!m_bAwaitingAnswer)
+			return false;
+		ShowResult(WidgetManager.Translate("#TK-Cockpit_Refused", WidgetManager.Translate("#TK-Reason_busy")));
+		return true;
+	}
+
 	protected void SendPending()
 	{
+		m_bAwaitingAnswer = true;
 		ShowResult(WidgetManager.Translate("#TK-Cockpit_Pending"));
 		if (m_bPendingIsConfig)
 			m_Player.AskSetConfig(m_sPendingOpId, m_iPendingTimeout, m_iPendingInterval, m_sPendingReason);
@@ -357,6 +375,7 @@ class TK_CockpitMenu : MenuBase
 	{
 		if (opId != m_sPendingOpId)
 			return;
+		m_bAwaitingAnswer = false;
 
 		switch (status)
 		{
@@ -370,6 +389,7 @@ class TK_CockpitMenu : MenuBase
 				else
 				{
 					ShowResult(WidgetManager.Translate("#TK-Cockpit_Accepted", total, revision));
+					m_sLookupTarget = m_sPendingTarget;
 					m_iLookupRevision = revision;
 					if (m_wWalletResult)
 						m_wWalletResult.SetTextFormat("#TK-Cockpit_WalletResult", total, reserved, revision);
@@ -383,16 +403,23 @@ class TK_CockpitMenu : MenuBase
 			{
 				ShowResult(WidgetManager.Translate("#TK-Cockpit_AlreadyApplied", total, revision));
 				if (!m_bPendingIsConfig)
+				{
+					m_sLookupTarget = m_sPendingTarget;
 					m_iLookupRevision = revision;
+				}
 				m_sPendingOpId = "";
 				break;
 			}
 			default:
 			{
 				ShowResult(WidgetManager.Translate("#TK-Cockpit_Refused", WidgetManager.Translate("#TK-Reason_" + reasonCode)));
-				// A stale revision comes back with the current one, so the next press is right.
+				// A stale revision comes back with the current one; it counts as the lookup
+				// of the pending target, or the next press would reset it to zero again.
 				if (revision > 0 && !m_bPendingIsConfig)
+				{
+					m_sLookupTarget = m_sPendingTarget;
 					m_iLookupRevision = revision;
+				}
 				if (reasonCode != TK_Reason.BACKEND_UNREACHABLE)
 					m_sPendingOpId = "";
 				break;

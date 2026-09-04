@@ -3,10 +3,32 @@
 class TK_BackendConfig : JsonApiStruct
 {
 	string BaseUrl = "http://127.0.0.1:8471/";
+	// Development only: a dedicated server without backend reach audits players with an
+	// empty identity, which would refuse every wallet command. Never enable on a real server.
+	bool DevIdentityFromName = false;
 
 	void TK_BackendConfig()
 	{
 		RegV("BaseUrl");
+		RegV("DevIdentityFromName");
+	}
+}
+
+class TK_DevIdentity
+{
+	// Same derivation the engine applies to a non-dedicated session, so the id a player
+	// gets on the local server matches the one Workbench play would give them.
+	static string FromName(string playerName)
+	{
+		int splitLength = Math.Max(1, playerName.Length() / 3);
+		string split1 = Math.AbsInt(playerName.Substring(0, splitLength).Hash()).ToString(8, true);
+		string split2 = Math.AbsInt(playerName.Substring(splitLength, splitLength).Hash()).ToString(8, true);
+		int doubleSplit = splitLength * 2;
+		string split3 = Math.AbsInt(playerName.Substring(doubleSplit, playerName.Length() - doubleSplit).Hash()).ToString(8, true);
+
+		string uid = string.Format("00bbbddd-%1-%2-%3-%4%5", split1.Substring(0, 4), split1.Substring(4, 4), split2.Substring(0, 4), split2.Substring(4, 4), split3);
+		uid.ToLower();
+		return uid;
 	}
 }
 
@@ -99,6 +121,7 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 	protected int m_iConfigRevision;
 	protected int m_iAnswerTimeoutS = 5;
 	protected int m_iRecheckIntervalS = 15;
+	protected bool m_bDevIdentityFromName;
 
 	static TK_BackendComponent GetInstance()
 	{
@@ -124,7 +147,11 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		if (FileIO.FileExists(CONFIG_PATH))
 			config.LoadFromFile(CONFIG_PATH);
 		else
-			config.SaveToFile(CONFIG_PATH);
+			config.PackToFile(CONFIG_PATH);
+
+		m_bDevIdentityFromName = config.DevIdentityFromName;
+		if (m_bDevIdentityFromName)
+			Print("[TK] backend: DevIdentityFromName is ON; players without an audited identity get one derived from their name. Development servers only.", LogLevel.WARNING);
 
 		string baseUrl = config.BaseUrl;
 		if (!baseUrl.EndsWith("/"))
@@ -189,6 +216,9 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 
 		Print(string.Format("[TK] backend: %1 -> %2 (contract '%3')", typename.EnumToString(TK_EBoundaryState, m_eState), typename.EnumToString(TK_EBoundaryState, state), m_sContractSeen), LogLevel.NORMAL);
 		m_eState = state;
+
+		if (state == TK_EBoundaryState.READY)
+			ConnectMissing_S();
 	}
 
 	protected void HandleHealth_S(string json)
@@ -219,13 +249,47 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 	override void OnPlayerAuditSuccess(int playerId)
 	{
 		super.OnPlayerAuditSuccess(playerId);
+		Connect_S(playerId);
+	}
 
+	// A connect that failed while the backend was away is repeated when it is back;
+	// without this a player who joined during an outage has no record until rejoin.
+	protected void ConnectMissing_S()
+	{
+		array<int> playerIds = {};
+		GetGame().GetPlayerManager().GetPlayers(playerIds);
+		foreach (int playerId : playerIds)
+		{
+			if (!GetSession(playerId) && !HasPendingConnect_S(playerId))
+				Connect_S(playerId);
+		}
+	}
+
+	protected bool HasPendingConnect_S(int playerId)
+	{
+		foreach (TK_BackendRequest request : m_aPending)
+		{
+			if (request.m_eKind == TK_ERequestKind.CONNECT && request.m_iPlayerId == playerId)
+				return true;
+		}
+		return false;
+	}
+
+	protected void Connect_S(int playerId)
+	{
 		if (!m_Context)
 			return;
 
 		// The platform identity is reliable only here and only on the server; an
-		// empty id (non-dedicated play) means no record is ever created for this player.
+		// empty id (no backend reach) means no record is ever created for this player,
+		// unless the development flag substitutes a name-derived one.
+		string playerName = GetGame().GetPlayerManager().GetPlayerName(playerId);
 		string uuid = GetGame().GetBackendApi().GetPlayerIdentityId(playerId);
+		if (uuid == "" && m_bDevIdentityFromName)
+		{
+			uuid = DevIdentity_S(playerName);
+			Print(string.Format("[TK] backend: player %1 '%2' has no audited identity; using development identity %3", playerId, playerName, uuid), LogLevel.WARNING);
+		}
 		if (uuid == "")
 		{
 			Print(string.Format("[TK] backend: player %1 has no audited identity; consequential commands stay refused", playerId), LogLevel.WARNING);
@@ -233,13 +297,15 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		}
 
 		TK_ConnectRequest body = new TK_ConnectRequest();
-		body.display_name = GetGame().GetPlayerManager().GetPlayerName(playerId);
+		body.display_name = playerName;
 
 		TK_BackendRequest request = new TK_BackendRequest();
 		request.m_eKind = TK_ERequestKind.CONNECT;
 		request.m_iPlayerId = playerId;
 		request.m_sTargetUuid = uuid;
 		m_aPending.Insert(request);
+		// AsString() yields "{}" until Pack() has serialised the registered members.
+		body.Pack();
 		request.Send(this, m_Context, "v1/players/" + uuid + "/connect", body.AsString());
 	}
 
@@ -254,6 +320,29 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		TK_PlayerSession session;
 		m_mSessions.Find(playerId, session);
 		return session;
+	}
+
+	// Clients of one platform account share a name; the second same-name joiner is
+	// derived from "Name#2" so a two-client test on one machine gets two wallets.
+	// Pending connects count as taken, because same-second joins race the answer.
+	protected string DevIdentity_S(string playerName)
+	{
+		string uuid = TK_DevIdentity.FromName(playerName);
+		for (int n = 2; IsDevIdentityTaken_S(uuid); n++)
+			uuid = TK_DevIdentity.FromName(playerName + "#" + n);
+		return uuid;
+	}
+
+	protected bool IsDevIdentityTaken_S(string uuid)
+	{
+		if (FindPlayerIdByUuid(uuid) >= 0)
+			return true;
+		foreach (TK_BackendRequest request : m_aPending)
+		{
+			if (request.m_eKind == TK_ERequestKind.CONNECT && request.m_sTargetUuid == uuid)
+				return true;
+		}
+		return false;
 	}
 
 	protected int FindPlayerIdByUuid(string uuid)
@@ -390,8 +479,9 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		command.expected_revision = expectedRevision;
 		command.config_revision = m_iConfigRevision;
 		command.reason = reason;
+		command.target_online = FindPlayerIdByUuid(command.target) >= 0;
 		command.payload.amount = amount;
-
+		command.Pack();
 		SendCommand_S(TK_ERequestKind.COMPENSATE, playerId, opId, command.target, command.AsString());
 	}
 
@@ -417,7 +507,7 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		command.reason = reason;
 		command.payload.answer_timeout_s = answerTimeoutS;
 		command.payload.recheck_interval_s = recheckIntervalS;
-
+		command.Pack();
 		SendCommand_S(TK_ERequestKind.CONFIG, playerId, opId, "config", command.AsString());
 	}
 
@@ -467,7 +557,7 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		command.config_revision = m_iConfigRevision;
 		command.payload.kind = kind;
 		command.payload.detail = detail;
-
+		command.Pack();
 		SendCommand_S(TK_ERequestKind.SECURITY, -1, command.op_id, session.m_sUuid, command.AsString());
 	}
 
@@ -489,6 +579,8 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		string json = "";
 		if (ok)
 			json = cb.GetData();
+		else if (cb.GetHttpCode() != 0)
+			Print(string.Format("[TK] backend: %1 answered HTTP %2: %3", typename.EnumToString(TK_ERequestKind, request.m_eKind), cb.GetHttpCode(), cb.GetData()), LogLevel.WARNING);
 
 		switch (request.m_eKind)
 		{

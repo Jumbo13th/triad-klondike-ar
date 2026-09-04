@@ -74,7 +74,7 @@
 - [x] T023 [US2] Implement `SendCommand_S` in `TK_BackendComponent.c`: identity, role (when required), busy and readiness checks in that order, `POST /v1/commands`, timeout and non-200 → `backend_unreachable`, answer parsing, pending slot cleared on every path, result delivered through the caller's owner RPC
 - [x] T024 [US2] Implement `RpcAsk_GetWallet` → `RpcDo_OwnerWallet` in `TK_PlayerComponent.c` (self for anyone, another uuid for operators) and the player balance display in `TK_CockpitMenu.c`; a received `RpcDo_OwnerReceipt` updates the balance from `totalAfter`
 - [x] T025 [US2] Implement operation-id handling in `TK_CockpitMenu.c`: mint with `UUID.GenV4()` on press, keep it while the result is `backend_unreachable`, `RetryButton` resends the same id, clear on any other terminal answer
-- [ ] T026 [US2] Play quickstart Scenarios C and D and record the outcomes
+- [x] T026 [US2] Play quickstart Scenarios C and D and record the outcomes (C steps 1–3 and 5, D steps 1–3 passed 2026-09-04; C step 4 covered by backend test)
 
 **Checkpoint**: a player sees their balance; a retried command never applies twice
 
@@ -91,7 +91,7 @@
 - [x] T029 [US3] Implement `RpcAsk_Compensate` in `TK_PlayerComponent.c` and `TK_BackendComponent.c`: non-operator → `unauthorized` to the caller and a `security` command to the backend; otherwise the envelope; on `accepted` push `RpcDo_OwnerReceipt` to the target when online
 - [x] T030 [US3] Implement `RpcAsk_GetAudit` → begin / row / end in `TK_PlayerComponent.c` and the audit list with `AuditMoreButton` paging in `TK_CockpitMenu.c`
 - [x] T031 [US3] Implement the operator section in `TK_CockpitMenu.c`: wallet lookup by uuid, amount and reason form (empty reason refused client-side too), result line showing the reason key and the current values from the answer
-- [ ] T032 [US3] Play quickstart Scenario B and record the outcome
+- [x] T032 [US3] Play quickstart Scenario B and record the outcome (steps 1–4 passed 2026-09-04; step 5 covered by backend test + server gate, no client path)
 
 **Checkpoint**: the first cockpit command works end to end with audit
 
@@ -105,7 +105,7 @@
 
 - [x] T033 [US4] Implement `config.set` in `backend/internal/domain/commands.go`: range validation (`answer_timeout_s` 1..120, `recheck_interval_s` 1..600), new `config` row, audit; `domain/config_test.go`; verify `-delay` and `-announce-contract` behave per contracts/backend-http.md in `api/flags_test.go`
 - [x] T034 [US4] Implement `RpcAsk_SetBoundaryConfig` in `TK_PlayerComponent.c` and `TK_BackendComponent.c`, and the config form in `TK_CockpitMenu.c`; the next health poll applies the new values
-- [ ] T035 [US4] Play quickstart Scenario E and record the outcome
+- [x] T035 [US4] Play quickstart Scenario E and record the outcome (passed 2026-09-04, revisions 2 and 3)
 
 **Checkpoint**: all four stories playable
 
@@ -116,7 +116,13 @@
 - [x] T036 Write the Russian text for every key in `Triad Klondike/Language/tk_localization.st` from the meaning (community loan words kept), regenerate the runtime confs, play quickstart Scenario F
 - [x] T037 [P] GUID audit: grep every new GUID and object id of the addon against `Triad Klondike/` and `Arma-Reforger-Script-Diff/GameData/`; record the result in the handover
 - [x] T038 [P] Hygiene pass over `Triad Klondike/scripts/` and `backend/`: `TK_` prefix on every type, `_S` on server-only methods, comments only on public members and only for constraints, no other code base named, no dead code
-- [ ] T039 Handover: the Workbench steps from plan.md, the list of asset files to double-check, the quickstart results, in the constitution's `Changes:` format
+- [x] T039 Handover: the Workbench steps from plan.md, the list of asset files to double-check, the quickstart results, in the constitution's `Changes:` format → `specs/001-backend-boundary/handover.md` (2026-09-05)
+- [x] T041 Development identity (clarification 2026-09-04, FR-020): `DevIdentityFromName` in `TK_BackendConfig`, `TK_DevIdentity.FromName` with the engine's non-dedicated derivation, substitution in `OnPlayerAuditSuccess` with warnings at start and per player; quickstart Scenario D step 3 and prerequisites
+- [x] T042 Play quickstart Scenario D step 3 on the local dedicated server and record the outcome
+- [x] T043 Repeat failed connects when the boundary turns ready (`ConnectMissing_S` from `SetState_S`), so a player who joined during a backend outage needs no rejoin; quickstart Scenario D2
+- [x] T044 Play quickstart Scenario D2 and record the outcome (passed 2026-09-04)
+- [x] T045 Receipt delivery (clarification 2026-09-04): `target_online` on the compensate envelope, backend marks the receipt delivered at creation when true (`TestLivePushedReceiptIsNotReplayedOnConnect`), game sets it from the target session; contract updated
+- [x] T046 Verify on the local server: credit an online player, reconnect them, connect claims no receipt; credit them while away, reconnect, connect claims exactly that one (passed 2026-09-04: receipts=0 after the live credit, receipts=1 after the away credit by identity)
 - [x] T040 Demo world and prefabs, written by the agent on the operator's instruction: `Prefabs/MP/Modes/TK_GameMode.et`, `Prefabs/Characters/Core/TK_PlayerController.et`, `worlds/Arland/KlondikeDemo.ent` with `a_systems.layer` and `spawns.layer`, `Missions/KlondikeDemo.conf`, the `IngameContext` binding of `TK_OpenCockpit`, three mission strings EN+RU
 
 ---

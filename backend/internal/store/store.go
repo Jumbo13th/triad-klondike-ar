@@ -20,7 +20,8 @@ type Store struct {
 	db *sql.DB
 }
 
-// Seed is the content of klondiked.json, read once when the database is created.
+// Seed is the content of klondiked.json, read at every start: the operator list is
+// applied each time, the runtime values only when the database is new.
 type Seed struct {
 	Operators        []string `json:"operators"`
 	AnswerTimeoutS   int64    `json:"answer_timeout_s"`
@@ -188,8 +189,9 @@ CREATE TABLE IF NOT EXISTS config (
 );
 `
 
-// Open creates or opens the database and seeds it from seedPath on first run. A
-// missing seed file means no operators and the default runtime values.
+// Open creates or opens the database and applies the seed at seedPath: the operator
+// list every time, the runtime values only on first run. A missing seed file means no
+// operators and the default runtime values.
 func Open(dbPath, seedPath string) (*Store, error) {
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
@@ -212,7 +214,16 @@ func Open(dbPath, seedPath string) (*Store, error) {
 		return nil, err
 	}
 	s := &Store{db: db}
-	if err := s.seedIfEmpty(seedPath); err != nil {
+	seed, err := readSeed(seedPath)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	if err := s.seedConfigIfEmpty(seed); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if err := s.applyOperators(seed); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -223,7 +234,25 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-func (s *Store) seedIfEmpty(seedPath string) error {
+func readSeed(seedPath string) (Seed, error) {
+	seed := Seed{AnswerTimeoutS: 5, RecheckIntervalS: 15}
+	data, err := os.ReadFile(seedPath)
+	switch {
+	case err == nil:
+		if err := json.Unmarshal(data, &seed); err != nil {
+			return seed, fmt.Errorf("%s: %w", seedPath, err)
+		}
+	case errors.Is(err, os.ErrNotExist):
+		log.Printf("no seed file at %s: starting with no operators", seedPath)
+	default:
+		return seed, err
+	}
+	return seed, nil
+}
+
+// The runtime values are seeded once: after that they change only through
+// config.set, which is what gives them a revision.
+func (s *Store) seedConfigIfEmpty(seed Seed) error {
 	return s.Update(func(t *Tx) error {
 		var count int
 		if err := t.tx.QueryRow("SELECT COUNT(*) FROM config").Scan(&count); err != nil {
@@ -232,30 +261,30 @@ func (s *Store) seedIfEmpty(seedPath string) error {
 		if count > 0 {
 			return nil
 		}
-		seed := Seed{AnswerTimeoutS: 5, RecheckIntervalS: 15}
-		data, err := os.ReadFile(seedPath)
-		switch {
-		case err == nil:
-			if err := json.Unmarshal(data, &seed); err != nil {
-				return fmt.Errorf("%s: %w", seedPath, err)
-			}
-		case errors.Is(err, os.ErrNotExist):
-			log.Printf("no seed file at %s: starting with no operators", seedPath)
-		default:
-			return err
-		}
+		return t.InsertConfig(Config{Revision: 1, AnswerTimeoutS: seed.AnswerTimeoutS, RecheckIntervalS: seed.RecheckIntervalS, ChangedBy: "seed", Reason: "seed", CreatedAt: Now()})
+	})
+}
+
+// The operator list is an allowlist, so every start makes the roles match it:
+// listed identities are operators (created if unknown), everyone else a player.
+func (s *Store) applyOperators(seed Seed) error {
+	return s.Update(func(t *Tx) error {
 		now := Now()
-		if err := t.InsertConfig(Config{Revision: 1, AnswerTimeoutS: seed.AnswerTimeoutS, RecheckIntervalS: seed.RecheckIntervalS, ChangedBy: "seed", Reason: "seed", CreatedAt: now}); err != nil {
+		if _, err := t.tx.Exec("UPDATE players SET role = 'player' WHERE role = 'operator'"); err != nil {
 			return err
 		}
 		for _, uuid := range seed.Operators {
-			if _, err := t.tx.Exec("INSERT INTO players (uuid, role, created_at) VALUES (?, 'operator', ?)", uuid, now); err != nil {
+			if _, err := t.tx.Exec("INSERT OR IGNORE INTO players (uuid, role, created_at) VALUES (?, 'operator', ?)", uuid, now); err != nil {
 				return err
 			}
-			if _, err := t.tx.Exec("INSERT INTO wallets (player_uuid) VALUES (?)", uuid); err != nil {
+			if _, err := t.tx.Exec("INSERT OR IGNORE INTO wallets (player_uuid) VALUES (?)", uuid); err != nil {
+				return err
+			}
+			if _, err := t.tx.Exec("UPDATE players SET role = 'operator' WHERE uuid = ?", uuid); err != nil {
 				return err
 			}
 		}
+		log.Printf("operators from seed: %d", len(seed.Operators))
 		return nil
 	})
 }
