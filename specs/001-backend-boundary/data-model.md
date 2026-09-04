@@ -45,10 +45,11 @@ Invariant checked on every commit: `0 <= reserved <= total`.
 | result_json | text | the exact answer returned, replayed on repeat |
 | created_at | text | |
 
-Idempotency: a `POST /v1/commands` whose `op_id` exists returns `already_applied` with
-`result_json` when the hash matches, and is refused `op_id_payload_mismatch` with a
-`security` audit entry when it does not. A refused operation is recorded too, so a
-repeat of a refusal returns the same refusal.
+Idempotency: a `POST /v1/commands` whose `op_id` exists replays `result_json` when the
+payload hash, type, actor, subject and target all match: status `already_applied` when
+the recorded operation was accepted, the recorded refusal unchanged when it was
+refused. Any difference is refused `op_id_payload_mismatch` with a `security` audit
+entry.
 
 ### ledger
 

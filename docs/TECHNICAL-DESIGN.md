@@ -352,9 +352,9 @@ Gameplay remains closed while boot performs:
 
 1. schema and configuration validation;
 2. the local backend contract-version check; an unreachable backend or an unknown
-   contract version leaves the boundary not ready, boot continues, and readiness is
-   re-checked on the configured interval until it recovers (players may enter,
-   consequential commands are refused meanwhile);
+   contract version leaves the boundary not ready and boot continues. Readiness is
+   re-checked on the configured interval until it recovers; once boot has finished,
+   players may enter while consequential commands are refused;
 3. unambiguous selection and load of the current Vakhta save point of the physical
    world;
 4. recovery, by operation id, of accepted operations whose physical stage is
@@ -1672,9 +1672,9 @@ them against the engine version used to ship.
 
 ### 18.5 Identity, markers, and statistics
 
-- `lite-lobby-ar/Lite Lobby/scripts/game/Core/LL_PlayerVerification.c` is evidence for
-  stable player verification integration; transient connection ids remain unsuitable
-  for ownership.
+- A shipped lobby addon already verifies players against a website over `RestContext`
+  keyed by the audited identity, which is evidence for stable player verification
+  integration; transient connection ids remain unsuitable for ownership.
 - `Arma-Reforger-Script-Diff/scripts/Game/Utilities/SCR_PlayerIdentityUtils.c` states
   that the UUID lookup is server-only and valid only after `OnPlayerAuditSuccess`.
   Every identity-keyed Klondike request uses that lifecycle gate.
@@ -1722,10 +1722,9 @@ them against the engine version used to ship.
   responsible for actually relaunching a stopped or crashed process.
 - Runtime `RestContext` is an outbound client with a documented small-payload limit; no
   inbound script HTTP listener was found. It is the launch path to the local backend
-  for every logical record: the game calls and polls, the backend never pushes.
-  `lite-lobby-ar/Lite Lobby/scripts/game/Core/LL_PlayerVerification.c` is the proven
-  server-side call pattern (callbacks strong-referenced until the answer, a timeout,
-  the HTTP code judged in both callbacks, fail closed).
+  for every logical record: the game calls and polls, the backend never pushes. The
+  proven server-side call pattern: callbacks strong-referenced until the answer, one
+  timeout, the HTTP code judged in both callbacks, fail closed.
 
 ## 19. Required Technical Spikes
 

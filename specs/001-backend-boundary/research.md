@@ -137,8 +137,11 @@ round-trip with no additional guarantee.
 
 ### D7. Operator role
 
-Decision: the backend holds the operator allowlist (seeded from its configuration file
-on first run) and returns `role` in the connect answer. The game refuses a cockpit RPC
+Decision: the backend holds the operator allowlist and returns `role` in the connect
+answer. The list's source of truth is `klondiked.json`: at every start the backend
+demotes every operator, then promotes the listed identities (creating their records
+if unknown), so a removal takes effect at the next start and nothing else can grant
+the role. The game refuses a cockpit RPC
 from a non-operator before any backend call (`unauthorized`, audited through the
 backend by a `security` command so the attempt is on the record), and the backend
 re-checks the actor's role on every cockpit command.
@@ -181,11 +184,13 @@ together with the lobby addon, so its U binding is no conflict.
 
 ### D11. Configuration split
 
-Decision: `$profile:TK_Backend.json` holds only the base URL (bootstrap). Everything the
-backend owns (port to listen on, operators, answer-time limit, re-check interval) lives
-in the backend: a small `klondiked.json` next to the binary seeds the database on first
-run, after which the cockpit `config.set` command changes the two runtime values with
-a new configuration revision and an audit entry.
+Decision: `$profile:TK_Backend.json` holds the base URL (bootstrap) and the development
+identity flag (FR-020). Everything the backend owns (port to listen on, operators,
+answer-time limit, re-check interval) lives in the backend: a small `klondiked.json`
+next to the binary is read at every start; its operator list is applied each time
+(D7), its two runtime values only when the database is new, after which the cockpit
+`config.set` command changes them with a new configuration revision and an audit
+entry. A seed value outside the `config.set` range refuses to start.
 
 Rationale: TECHNICAL-DESIGN 3 and 3.2 (versioned configuration with recorded changes),
 constitution testability (runtime regulation without restart), and the `$profile`
@@ -194,7 +199,9 @@ allowance in 2.5.
 ### D12. Demo-world controls
 
 Decision: the backend accepts `-announce-contract <string>` (announce a different
-contract version) and `-delay <duration>` (delay every answer) as runtime flags, and
+contract version) and `-delay <duration>` (delay every command answer; health and
+reads stay instant, or a join burst times out the engine's serialised queue) as
+runtime flags, and
 readiness is produced by stopping and starting the process. Runtime values change from
 the panel.
 
@@ -203,8 +210,10 @@ production carries no test branch in script.
 
 ### D13. Money representation
 
-Decision: integer whole units, signed 64-bit on the backend, `int` in script; the
-credit/debit amount is a signed integer, positive credits, negative debits.
+Decision: integer whole units; the credit/debit amount is a signed integer, positive
+credits, negative debits. The shared range is the signed 32-bit range of the script
+`int`: the backend stores 64-bit but refuses (`invalid_amount`) any amount or resulting
+total the game could not carry in an RPC or show.
 
 Rationale: RULES 7 never mentions fractions; integers avoid rounding disputes in a
 ledger. Assumption recorded in the spec.

@@ -7,7 +7,7 @@ class TK_BackendContract
 	static const string CONTRACT_VERSION = "1";
 }
 
-// Refusal codes the client translates as #TK-Reason_<code>. The first four are
+// Refusal codes the client translates as #TK-Reason_<code>. The first five are
 // decided on the game server before any backend call.
 class TK_Reason
 {
@@ -15,6 +15,7 @@ class TK_Reason
 	static const string CONTRACT_VERSION_UNKNOWN = "contract_version_unknown";
 	static const string IDENTITY_NOT_READY = "identity_not_ready";
 	static const string BUSY = "busy";
+	static const string TARGET_AMBIGUOUS = "target_ambiguous";
 	static const string UNAUTHORIZED = "unauthorized";
 	static const string PLAYER_UNKNOWN = "player_unknown";
 }

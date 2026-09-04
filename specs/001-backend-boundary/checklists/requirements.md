@@ -3,6 +3,7 @@
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-09-03
 **Feature**: [spec.md](../spec.md)
+**Done criteria**: constitution Principles II, III, IV and the Documentation and Language section; artifact spec.md only; finding types: ambiguity, missing requirement, implementation detail leaking into the spec, untestable criterion; one pass, then stop
 
 ## Content Quality
 

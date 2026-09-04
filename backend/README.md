@@ -8,6 +8,8 @@ configuration the game polls. The HTTP contract is in
 
 ## Build and test
 
+Needs the Go toolchain at the version `go.mod` names or newer.
+
 ```text
 go build ./cmd/klondiked
 go test ./...

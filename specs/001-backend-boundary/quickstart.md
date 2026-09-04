@@ -5,8 +5,8 @@ How to prove the feature in the demo world. Contracts: [backend-http.md](contrac
 
 ## Prerequisites
 
-- Go toolchain on the machine that builds the backend (not installed on the
-  development machine today).
+- Go toolchain on the machine that builds the backend, at the version
+  `backend/go.mod` names or newer (`backend/README.md`).
 - A local dedicated Arma Reforger server running the `KlondikeDemo` scenario, plus one
   or two clients. Designed setup: the addon loaded from disk (`-addonsDir` naming the
   directory that contains `Triad Klondike`, `-addons TriadKlondike`), profile
@@ -170,10 +170,10 @@ backend stopped (connects failed with HTTP 0, panels unreachable with identity n
 confirmed); after the backend start the server log showed `UNREACHABLE -> READY`
 and a new connect per player with the same development identities, the backend
 console showed both connects, and the panels showed the wallets on Refresh. No
-rejoin. Observation: the player's connect claimed one receipt that had already been
-delivered live before the outage; receipts pushed live are never marked delivered,
-so every reconnect re-delivers them (six after the earlier rejoin). Open question
-for the operator, see the knowledge note.
+rejoin. Observation at the time: the player's connect claimed a receipt that had
+already been delivered live before the outage, because live receipts were never
+marked delivered. Settled the same day by `target_online` on the compensate envelope
+(T045); the receipt-delivery result above shows the settled behaviour.
 
 ## Scenario E: runtime regulation (FR-016)
 

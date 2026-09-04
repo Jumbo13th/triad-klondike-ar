@@ -28,7 +28,9 @@ Rules:
   keeps it until the result arrives; a retry after `backend_unreachable` reuses it.
 - `targetUuid` may also be the exact display name of a connected player; the server
   resolves it to that player's identity before any check, because names are what an
-  operator can read off the player list at a test table.
+  operator can read off the player list at a test table. A name held by several
+  connected players is refused `target_ambiguous`; an empty target on
+  `RpcAsk_Compensate` is refused `player_unknown` (on `RpcAsk_GetWallet` it means self).
 - `expectedRevision` is the revision the panel last displayed for that wallet; the
   server passes it through unchanged.
 - `RpcDo_OwnerReceipt` carries the new `totalAfter`, so the target's display updates

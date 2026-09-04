@@ -73,3 +73,15 @@ func TestOperatorListIsAppliedAtEveryStart(t *testing.T) {
 		t.Fatalf("config after second start = %+v, want revision 1 with the first seed's values", cfg)
 	}
 }
+
+func TestSeedOutsideTheConfigRangeRefusesToStart(t *testing.T) {
+	dir := t.TempDir()
+	seedPath := filepath.Join(dir, "klondiked.json")
+	if err := os.WriteFile(seedPath, []byte(`{"operators":[],"answer_timeout_s":0,"recheck_interval_s":15}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if s, err := Open(filepath.Join(dir, "klondike.db"), seedPath); err == nil {
+		s.Close()
+		t.Fatal("answer_timeout_s 0 was accepted")
+	}
+}

@@ -297,3 +297,30 @@ func TestTargetOnlineAcceptsEngineNumbers(t *testing.T) {
 		}
 	}
 }
+
+func TestRepeatedOpIDWithAnotherTargetIsRefused(t *testing.T) {
+	svc, _ := newService(t)
+	if a, err := svc.Execute(compensate("op-id-bound", 100, 1, "first")); err != nil || a.Status != StatusAccepted {
+		t.Fatalf("first: %+v %v", a, err)
+	}
+	other := compensate("op-id-bound", 100, 1, "first")
+	other.Target = stranger
+	a, err := svc.Execute(other)
+	if err != nil || a.Status != StatusRefused || a.ReasonCode != ReasonOpIDPayloadMismatch {
+		t.Fatalf("same op_id, other target: %+v %v", a, err)
+	}
+}
+
+func TestMoneyStaysInTheGameRange(t *testing.T) {
+	svc, _ := newService(t)
+	if a, err := svc.Execute(compensate("op-range-1", 3000000000, 1, "too big")); err != nil || a.ReasonCode != ReasonInvalidAmount {
+		t.Fatalf("amount beyond the range: %+v %v", a, err)
+	}
+	if a, err := svc.Execute(compensate("op-range-2", 2000000000, 1, "fits")); err != nil || a.Status != StatusAccepted {
+		t.Fatalf("amount within the range: %+v %v", a, err)
+	}
+	a, err := svc.Execute(compensate("op-range-3", 2000000000, 2, "overflows"))
+	if err != nil || a.ReasonCode != ReasonInvalidAmount || a.Wallet == nil || a.Wallet.Total != 2000000000 {
+		t.Fatalf("total beyond the range: %+v %v", a, err)
+	}
+}

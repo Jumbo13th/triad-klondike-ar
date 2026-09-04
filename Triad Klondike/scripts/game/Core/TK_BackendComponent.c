@@ -61,6 +61,7 @@ class TK_BackendRequest : Managed
 	string m_sOpId;
 	string m_sTargetUuid;
 	int m_iExpectedRevision;
+	bool m_bTargetOnline;
 	ref RestCallback m_Callback;
 	TK_BackendComponent m_Component;
 
@@ -190,8 +191,8 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 	}
 
 	// Polled always, not only while down, so a backend that dies between player
-	// commands is noticed within one interval. Re-armed after each poll so a changed
-	// interval applies at once.
+	// commands is noticed within one interval. One timer only, whether the poll came
+	// from the interval or from an accepted configuration change.
 	protected void PollHealth_S()
 	{
 		if (!m_Context)
@@ -203,8 +204,11 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		m_aPending.Insert(request);
 		request.Send(this, m_Context, "v1/health", "");
 
-		// One timer only, whether this poll came from the interval or from an
-		// accepted configuration change.
+		ArmHealthTimer_S();
+	}
+
+	protected void ArmHealthTimer_S()
+	{
 		GetGame().GetCallqueue().Remove(PollHealth_S);
 		GetGame().GetCallqueue().CallLater(PollHealth_S, m_iRecheckIntervalS * 1000, false);
 	}
@@ -233,8 +237,11 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 			m_iAnswerTimeoutS = answer.answer_timeout_s;
 			m_Context.SetTimeout(m_iAnswerTimeoutS);
 		}
-		if (answer.recheck_interval_s > 0)
+		if (answer.recheck_interval_s > 0 && answer.recheck_interval_s != m_iRecheckIntervalS)
+		{
 			m_iRecheckIntervalS = answer.recheck_interval_s;
+			ArmHealthTimer_S();
+		}
 
 		if (answer.contract == TK_BackendContract.CONTRACT_VERSION)
 			SetState_S(TK_EBoundaryState.READY);
@@ -275,14 +282,15 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		return false;
 	}
 
+	// The platform identity is reliable only after the audit and only on the server;
+	// an empty id (no backend reach) means no record is ever created for this player,
+	// unless the development flag substitutes a name-derived one. Every body is
+	// Pack()ed before AsString(), which yields "{}" otherwise.
 	protected void Connect_S(int playerId)
 	{
 		if (!m_Context)
 			return;
 
-		// The platform identity is reliable only here and only on the server; an
-		// empty id (no backend reach) means no record is ever created for this player,
-		// unless the development flag substitutes a name-derived one.
 		string playerName = GetGame().GetPlayerManager().GetPlayerName(playerId);
 		string uuid = GetGame().GetBackendApi().GetPlayerIdentityId(playerId);
 		if (uuid == "" && m_bDevIdentityFromName)
@@ -304,7 +312,6 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		request.m_iPlayerId = playerId;
 		request.m_sTargetUuid = uuid;
 		m_aPending.Insert(request);
-		// AsString() yields "{}" until Pack() has serialised the registered members.
 		body.Pack();
 		request.Send(this, m_Context, "v1/players/" + uuid + "/connect", body.AsString());
 	}
@@ -356,9 +363,11 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 	}
 
 	// A target may be given as an identity or as the exact name of a connected
-	// player; names are far easier to type at a test table.
-	protected string ResolveTarget_S(int playerId, string target)
+	// player; names are far easier to type at a test table. Names are not unique, so
+	// a name held by several connected players is refused rather than guessed.
+	protected string ResolveTarget_S(int playerId, string target, out string refusal)
 	{
+		refusal = "";
 		if (target == "")
 		{
 			TK_PlayerSession self = GetSession(playerId);
@@ -368,11 +377,20 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		}
 
 		PlayerManager pm = GetGame().GetPlayerManager();
+		string found = "";
 		foreach (int otherId, TK_PlayerSession session : m_mSessions)
 		{
-			if (pm.GetPlayerName(otherId) == target)
-				return session.m_sUuid;
+			if (pm.GetPlayerName(otherId) != target)
+				continue;
+			if (found != "")
+			{
+				refusal = TK_Reason.TARGET_AMBIGUOUS;
+				return "";
+			}
+			found = session.m_sUuid;
 		}
+		if (found != "")
+			return found;
 		return target;
 	}
 
@@ -438,11 +456,13 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		if (!player)
 			return;
 
-		string uuid = ResolveTarget_S(playerId, target);
+		string refusal;
+		string uuid = ResolveTarget_S(playerId, target, refusal);
 		TK_PlayerSession session = GetSession(playerId);
 		bool other = session && uuid != session.m_sUuid;
 
-		string refusal = Gate_S(playerId, other, false, "");
+		if (refusal == "")
+			refusal = Gate_S(playerId, other, false, "");
 		if (refusal != "")
 		{
 			player.SendWallet_S(target, 0, 0, 0, refusal);
@@ -470,19 +490,31 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 			return;
 		}
 
+		string targetUuid = "";
+		if (target != "")
+			targetUuid = ResolveTarget_S(playerId, target, refusal);
+		if (targetUuid == "")
+		{
+			if (refusal == "")
+				refusal = TK_Reason.PLAYER_UNKNOWN;
+			ReleasePending_S(playerId, opId);
+			player.SendCommandResult_S(opId, TK_ECommandStatus.REFUSED, refusal, 0, 0, 0);
+			return;
+		}
+
 		TK_PlayerSession session = GetSession(playerId);
 		TK_CompensateCommand command = new TK_CompensateCommand();
 		command.op_id = opId;
 		command.actor = session.m_sUuid;
 		command.subject = session.m_sUuid;
-		command.target = ResolveTarget_S(playerId, target);
+		command.target = targetUuid;
 		command.expected_revision = expectedRevision;
 		command.config_revision = m_iConfigRevision;
 		command.reason = reason;
-		command.target_online = FindPlayerIdByUuid(command.target) >= 0;
+		command.target_online = FindPlayerIdByUuid(targetUuid) >= 0;
 		command.payload.amount = amount;
 		command.Pack();
-		SendCommand_S(TK_ERequestKind.COMPENSATE, playerId, opId, command.target, command.AsString());
+		SendCommand_S(TK_ERequestKind.COMPENSATE, playerId, opId, targetUuid, command.AsString(), command.target_online);
 	}
 
 	void SetConfig_S(int playerId, string opId, int answerTimeoutS, int recheckIntervalS, string reason)
@@ -531,13 +563,14 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		request.Send(this, m_Context, string.Format("v1/audit?limit=%1&before=%2", AUDIT_PAGE, beforeId), "");
 	}
 
-	protected void SendCommand_S(TK_ERequestKind kind, int playerId, string opId, string targetUuid, string body)
+	protected void SendCommand_S(TK_ERequestKind kind, int playerId, string opId, string targetUuid, string body, bool targetOnline = false)
 	{
 		TK_BackendRequest request = new TK_BackendRequest();
 		request.m_eKind = kind;
 		request.m_iPlayerId = playerId;
 		request.m_sOpId = opId;
 		request.m_sTargetUuid = targetUuid;
+		request.m_bTargetOnline = targetOnline;
 		m_aPending.Insert(request);
 		request.Send(this, m_Context, "v1/commands", body);
 	}
@@ -624,8 +657,13 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		}
 	}
 
+	// A player who left while their connect was in flight gets no session: a ghost
+	// entry would hold their identity and count them online for receipt delivery.
 	protected void HandleConnect_S(TK_BackendRequest request, string json)
 	{
+		if (!GetGame().GetPlayerManager().IsPlayerConnected(request.m_iPlayerId))
+			return;
+
 		TK_ConnectAnswer answer = new TK_ConnectAnswer();
 		answer.ExpandFromRAW(json);
 
@@ -659,6 +697,10 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		player.SendWallet_S(request.m_sTargetUuid, wallet.total, wallet.reserved, wallet.revision, wallet.error);
 	}
 
+	// The receipt is pushed here only when the target was online at dispatch: the
+	// backend then recorded it as delivered. A target who connected meanwhile claims
+	// it through connect instead. New runtime values arrive with the next health
+	// answer, so an accepted configuration change polls at once.
 	protected void HandleCommand_S(TK_BackendRequest request, bool ok, string json)
 	{
 		TK_PlayerComponent player = TK_PlayerComponent.GetByPlayerId(request.m_iPlayerId);
@@ -682,7 +724,7 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 		if (player)
 			player.SendCommandResult_S(request.m_sOpId, status, answer.reason_code, answer.wallet.total, answer.wallet.reserved, answer.revision);
 
-		if (status == TK_ECommandStatus.ACCEPTED && request.m_eKind == TK_ERequestKind.COMPENSATE)
+		if (status == TK_ECommandStatus.ACCEPTED && request.m_eKind == TK_ERequestKind.COMPENSATE && request.m_bTargetOnline)
 		{
 			int targetId = FindPlayerIdByUuid(request.m_sTargetUuid);
 			TK_PlayerComponent target = TK_PlayerComponent.GetByPlayerId(targetId);
@@ -690,8 +732,6 @@ class TK_BackendComponent : SCR_BaseGameModeComponent
 				target.SendReceipt_S(answer.receipt.op_id, answer.receipt.amount, answer.receipt.total_after, answer.receipt.created_at, answer.receipt.reason);
 		}
 
-		// The new runtime values arrive with the next health answer; ask now rather
-		// than wait out the old interval.
 		if (status == TK_ECommandStatus.ACCEPTED && request.m_eKind == TK_ERequestKind.CONFIG)
 			PollHealth_S();
 	}

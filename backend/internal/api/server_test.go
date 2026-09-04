@@ -125,7 +125,11 @@ func TestConnectWalletCommandsAndAudit(t *testing.T) {
 		t.Fatalf("unknown type status %d, want 400", code)
 	}
 	req, _ := http.NewRequest("POST", srv.URL+"/v1/commands", bytes.NewBufferString("{not json"))
-	res, _ := http.DefaultClient.Do(req)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
 	if res.StatusCode != 400 {
 		t.Fatalf("malformed JSON status %d, want 400", res.StatusCode)
 	}

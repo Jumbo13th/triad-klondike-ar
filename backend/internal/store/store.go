@@ -8,7 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -27,6 +30,15 @@ type Seed struct {
 	AnswerTimeoutS   int64    `json:"answer_timeout_s"`
 	RecheckIntervalS int64    `json:"recheck_interval_s"`
 }
+
+// Runtime configuration bounds (contracts/backend-http.md); the seed and
+// config.set are both held to them, so a stored revision is always in effect.
+const (
+	MinAnswerTimeoutS   = 1
+	MaxAnswerTimeoutS   = 120
+	MinRecheckIntervalS = 1
+	MaxRecheckIntervalS = 600
+)
 
 type Player struct {
 	UUID          string
@@ -193,22 +205,19 @@ CREATE TABLE IF NOT EXISTS config (
 // list every time, the runtime values only on first run. A missing seed file means no
 // operators and the default runtime values.
 func Open(dbPath, seedPath string) (*Store, error) {
-	db, err := sql.Open("sqlite", dbPath)
+	// Pragmas travel in the DSN so that a connection the pool replaces after an
+	// error enforces them too; foreign_keys and busy_timeout are per connection.
+	path := filepath.ToSlash(dbPath)
+	if filepath.IsAbs(dbPath) && !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	dsn := "file:" + (&url.URL{Path: path}).EscapedPath() +
+		"?_pragma=journal_mode(WAL)&_pragma=synchronous(FULL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)"
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
-	for _, pragma := range []string{
-		"PRAGMA journal_mode = WAL",
-		"PRAGMA synchronous = FULL",
-		"PRAGMA foreign_keys = ON",
-		"PRAGMA busy_timeout = 5000",
-	} {
-		if _, err := db.Exec(pragma); err != nil {
-			db.Close()
-			return nil, fmt.Errorf("%s: %w", pragma, err)
-		}
-	}
 	if _, err := db.Exec(schema); err != nil {
 		db.Close()
 		return nil, err
@@ -246,6 +255,12 @@ func readSeed(seedPath string) (Seed, error) {
 		log.Printf("no seed file at %s: starting with no operators", seedPath)
 	default:
 		return seed, err
+	}
+	if seed.AnswerTimeoutS < MinAnswerTimeoutS || seed.AnswerTimeoutS > MaxAnswerTimeoutS {
+		return seed, fmt.Errorf("%s: answer_timeout_s %d is outside %d..%d", seedPath, seed.AnswerTimeoutS, MinAnswerTimeoutS, MaxAnswerTimeoutS)
+	}
+	if seed.RecheckIntervalS < MinRecheckIntervalS || seed.RecheckIntervalS > MaxRecheckIntervalS {
+		return seed, fmt.Errorf("%s: recheck_interval_s %d is outside %d..%d", seedPath, seed.RecheckIntervalS, MinRecheckIntervalS, MaxRecheckIntervalS)
 	}
 	return seed, nil
 }

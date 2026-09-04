@@ -28,17 +28,9 @@ $url = "http://127.0.0.1:$Port/v1/health"
 $contract = (Select-String -Path (Join-Path $backendDir 'internal\domain\reason.go') -Pattern 'ContractVersion = "([^"]+)"').Matches[0].Groups[1].Value
 $expected = if ($Announce) { $Announce } else { $contract }
 
-# The -delay flag delays every answer, health included, so the check waits longer
-# than the delay when one is set.
-$healthTimeout = 3
-if ($Delay -match '^(\d+(?:\.\d+)?)(ms|s|m)?$') {
-    $seconds = [double]$Matches[1]
-    switch ($Matches[2]) { 'ms' { $seconds /= 1000 } 'm' { $seconds *= 60 } }
-    $healthTimeout = [int][math]::Ceiling($seconds) + 3
-}
 
 function Get-Health {
-    try { return (Invoke-WebRequest -UseBasicParsing -TimeoutSec $healthTimeout $url).Content | ConvertFrom-Json } catch { return $null }
+    try { return (Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 $url).Content | ConvertFrom-Json } catch { return $null }
 }
 
 function Stop-Backend {
@@ -76,17 +68,17 @@ if (-not (Test-Path $seed)) {
     Write-Host "wrote $seed with an EMPTY operator list; add the operator's player identity (printed by the server log at connect) before testing cockpit commands"
 }
 
-$args = @('-listen', "127.0.0.1:$Port", '-data', 'data')
-if ($Announce) { $args += @('-announce-contract', $Announce) }
-if ($Delay) { $args += @('-delay', $Delay) }
-$proc = Start-Process -FilePath $exe -ArgumentList $args -WorkingDirectory $backendDir -PassThru -WindowStyle Minimized
+$klondikedArgs = @('-listen', "127.0.0.1:$Port", '-data', 'data')
+if ($Announce) { $klondikedArgs += @('-announce-contract', $Announce) }
+if ($Delay) { $klondikedArgs += @('-delay', $Delay) }
+$proc = Start-Process -FilePath $exe -ArgumentList $klondikedArgs -WorkingDirectory $backendDir -PassThru -WindowStyle Minimized
 
 for ($i = 0; $i -lt 20; $i++) {
     Start-Sleep -Milliseconds 250
     $health = Get-Health
     if ($health) { break }
 }
-if (-not $health) { throw "backend started (pid $($proc.Id)) but /v1/health did not answer within $($healthTimeout + 5) s" }
+if (-not $health) { throw "backend started (pid $($proc.Id)) but /v1/health did not answer within 5 s" }
 Write-Host "backend started (pid $($proc.Id)) on port $Port, contract $($health.contract), config revision $($health.config_revision)$(if ($Delay) { ", delay $Delay" })"
 $seedJson = Get-Content $seed -Raw | ConvertFrom-Json
 if (-not $seedJson.operators -or $seedJson.operators.Count -eq 0) { Write-Host 'note: the seed has no operators; cockpit commands will be refused as unauthorized' }

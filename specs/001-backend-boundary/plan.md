@@ -16,18 +16,22 @@ balance. Decisions and their sources are in [research.md](research.md).
 
 ## Technical Context
 
-**Language/Version**: Enforce Script for Arma Reforger 1.8.0.10 (game side); Go 1.23
-or newer (backend; not installed on the development machine, operator to install)
+**Language/Version**: Enforce Script for Arma Reforger 1.8.0.10 (game side); Go at the
+version `backend/go.mod` names (see `backend/README.md`)
 
 **Primary Dependencies**: game: vanilla `RestApi`/`RestContext`/`RestCallback`,
 `JsonApiStruct`, `SCR_BaseGameModeComponent`, owner RPCs, `MenuBase`; backend: Go
 standard library, `modernc.org/sqlite`
 
 **Storage**: SQLite file in the backend data directory (WAL, `synchronous=FULL`); the
-game stores nothing but `$profile:TK_Backend.json` (base URL)
+game stores nothing but `$profile:TK_Backend.json` (base URL, development identity
+flag)
 
-**Testing**: backend: `go test` domain tests (idempotency, revision, funds, payload
-mismatch, config range); game: the demo world by hand per [quickstart.md](quickstart.md)
+**Testing**: backend: `go test` domain tests (idempotency, revision, funds, payload and
+identity mismatch, money range, config and seed range); game: the demo world by hand
+per [quickstart.md](quickstart.md), including game-server loss before, during and after
+a command (Scenario C). Measured loopback timing and physical-stage recovery are the
+durability spike of TECHNICAL-DESIGN 19, not this feature.
 
 **Target Platform**: dedicated Arma Reforger server and the backend on one host, the
 backend bound to 127.0.0.1; the demo world is a local dedicated server
@@ -42,7 +46,7 @@ strong-referenced; RPCs at most 8 arguments; no `[RplProp()]`; nothing broadcast
 fail closed; every visible string localized EN and RU
 
 **Scale/Scope**: 127 players, at most one pending command per player, audit paged 20
-rows at a time; 5 game scripts, 1 layout, 2 config overrides, 1 string table, 1 Go module
+rows at a time; 5 game scripts, 2 layouts, 2 config overrides, 1 string table, 1 Go module
 
 ## Constitution Check
 
@@ -57,7 +61,7 @@ rows at a time; 5 game scripts, 1 layout, 2 config overrides, 1 string table, 1 
 | V Server authority and replication | See the replication classification below; zero `[RplProp()]`, zero broadcast, every `RpcAsk_*` re-validated on the server, `_S` suffix on server-only methods | pass |
 | VI Localhost backend | Loopback-only listen, game is the only caller, versioned contract checked at boot, fail closed with stable reasons, no local journal | pass |
 | VII Comments and hygiene | `TK_` prefix on every type; comments only on public members stating constraints; no other code base named | pass (checked at implementation) |
-| Engine and asset constraints | Files the operator must double-check are listed under Workbench steps; both conf overrides carry the base game's GUID; every new GUID is generated fresh and grepped against the addon and vanilla data before handover; no `.et` is written by the agent | pass |
+| Engine and asset constraints | Files the operator must double-check are listed under Workbench steps; both conf overrides carry the base game's GUID; every new GUID is generated fresh and grepped against the addon and vanilla data before handover (result in handover.md). Two `.et` files are agent-written on the operator's instruction and stated as such: `TK_GameMode.et` (derived from `GameMode_Base.et`, adds `TK_BackendComponent` and the respawn/faction/loadout children the base needs) and `TK_PlayerController.et` (derived from `DefaultPlayerControllerMP.et`, adds `TK_PlayerComponent`); the operator double-checks both in Workbench | pass |
 | Persistence and data | Two stores, one split: backend owns every logical record; the game persists nothing for this feature; mutations carry actor, operation id, target, expected revision | pass |
 | Documentation and language | String table with EN and RU written from meaning; reason codes are keys; `TECHNICAL-DESIGN.md` v1.1 already revised | pass |
 | Testability and the demo world | Quickstart scenarios A–F; runtime values changed from the panel; backend flags produce every boundary state; demo world is a local dedicated server | pass |

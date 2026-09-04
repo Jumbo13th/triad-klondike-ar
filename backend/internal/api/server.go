@@ -95,13 +95,14 @@ func (s *server) wallet(w http.ResponseWriter, r *http.Request) {
 	reply(w, wallet)
 }
 
+// The delay flag sleeps after the body is read, not before: it simulates a backend
+// that has the command and answers late, so a caller that dies meanwhile still gets
+// its row applied.
 func (s *server) commands(w http.ResponseWriter, r *http.Request) {
 	var cmd domain.Command
 	if !decode(w, r, &cmd) {
 		return
 	}
-	// After the read, not before: the flag simulates a backend that has the command
-	// and answers late, so a caller that dies meanwhile still gets its row applied.
 	if s.delay > 0 {
 		time.Sleep(s.delay)
 	}

@@ -27,6 +27,21 @@ Workbench files to double-check (agent-authored, plan.md "Workbench steps"):
 - `UI/Cockpit/CockpitPanel.layout`, `UI/Cockpit/CockpitTextLine.layout`
 - `Language/tk_localization.st` and the 13 runtime confs, `addon.gproj`
 
+GUID audit (T037, re-run 2026-09-05): every new GUID and object id is absent from the
+vanilla game data and appears once in the addon (twice where a conf, script or gproj
+references it). The only vanilla matches are the inherited prefab IDs of
+`GameMode_Base` and `DefaultPlayerControllerMP` and the RespawnSystem component id,
+which derived prefabs keep by engine convention. Both conf overrides carry the base
+game's GUID on purpose.
+
+Review of PR #1 (2026-09-05, T047): the code and document corrections are listed in
+tasks.md. Not played yet on the local server: the dropped connect answer for a player
+who left, `target_ambiguous`, the empty-target refusal, the receipt push gated on
+dispatch-time presence, the re-parented spawn points (the vanilla `SpawnPoint_USSR.et`
+GUID is not in the script dump, so both factions derive from `SpawnPoint_Base.et`
+with the faction prefab's own overrides; re-parent in Workbench if preferred), and
+the string-table author fields. Play Scenario B and D2 once more after the merge.
+
 Quickstart results (details under each scenario in quickstart.md):
 - A readiness: passed 2026-09-03 (Workbench)
 - B balance, credit, receipt, insufficient funds: passed 2026-09-04
@@ -51,3 +66,5 @@ Not done, for the cockpit redo against the Conflict screens:
 - Offline targets reachable by identity in an obvious way; case-insensitive name match
 - Receipts kept on the player component or shown in a notification feed, so a receipt
   delivered before the panel opens is not lost from view
+- "Older" disabled while an audit page is in flight; two quick presses append the
+  same page twice today

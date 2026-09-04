@@ -6,11 +6,12 @@ class TK_GameModeClass : SCR_BaseGameModeClass
 // only owns what the base game mode requires and the cockpit key.
 class TK_GameMode : SCR_BaseGameMode
 {
+	// The cockpit key is bound everywhere but on a dedicated server, which has no
+	// input and no UI.
 	override void OnGameStart()
 	{
 		super.OnGameStart();
 
-		// Dedicated servers have no input and no UI.
 		if (RplSession.Mode() != RplMode.Dedicated)
 			GetGame().GetInputManager().AddActionListener("TK_OpenCockpit", EActionTrigger.DOWN, Action_OpenCockpit);
 	}

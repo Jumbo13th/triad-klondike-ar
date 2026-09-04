@@ -212,16 +212,18 @@ follow each change.
   where edits can race, the configuration revision, and only the choice the server
   cannot derive; cockpit commands additionally carry an operator reason.
 - **FR-004**: The backend MUST answer every command with exactly one of: accepted (with
-  the result and a receipt), refused (with a stable reason and the current authoritative
-  value needed to correct the request), or already applied (with the original result).
+  the result, and a receipt when the command moved money), refused (with a stable reason
+  and the current authoritative value needed to correct the request), or already applied
+  (with the original result).
 - **FR-005**: The game MUST apply a physical or displayed effect only after an accepted
   answer, never before and never on a late or unknown answer.
 - **FR-006**: While the boundary is not ready or the backend does not answer within the
   configured time, the game MUST refuse consequential commands with a visible, stable
   reason and MUST NOT journal them for later replay. Ordinary play is unaffected.
-- **FR-007**: A repeated operation id with an identical payload MUST return the original
-  result without a second application; a repeated operation id with a different payload
-  MUST be refused and recorded as a security event.
+- **FR-007**: A repeated operation id with an identical payload, type, actor, subject
+  and target MUST return the original result without a second application; a repeated
+  operation id that differs in any of them MUST be refused and recorded as a security
+  event.
 - **FR-008**: The backend MUST be the system of record for the player record, the
   wallet (total, reserved, revision) and the append-only ledger (RULES 7.1). The game
   keeps no copy of money beyond what it displays.
@@ -240,7 +242,9 @@ follow each change.
   authorized operators MUST be able to read the recent entries in game.
 - **FR-013**: Every accepted consequential command MUST produce a receipt keyed by its
   operation id, delivered to the affected player, and held for them when offline
-  (RULES 17.2).
+  (RULES 17.2). Delivery is settled at creation when the target is online (clarification
+  2026-09-04): a receipt whose command was in flight when the game server died is
+  never shown, while its ledger row stands. That loss is accepted.
 - **FR-014**: Every user-visible string of this feature (refusal reasons, receipts,
   readiness states, operator feedback) MUST be localized in English and Russian.
 - **FR-015**: The backend MUST listen only on the local machine and the game MUST call

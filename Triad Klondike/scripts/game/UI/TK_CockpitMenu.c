@@ -187,6 +187,8 @@ class TK_CockpitMenu : MenuBase
 	// STATE AND BALANCE
 	// =====================================================================
 
+	// The configuration edit boxes are prefilled only while empty, so a refresh never
+	// overwrites what the operator has typed.
 	protected void OnCockpitState(int state, string reasonCode, string contractSeen, int configRevision, int answerTimeoutS, int recheckIntervalS, int role)
 	{
 		string stateText = WidgetManager.Translate(StateKey(state));
@@ -206,7 +208,6 @@ class TK_CockpitMenu : MenuBase
 		if (m_wMoreButton)
 			m_wMoreButton.SetVisible(m_bOperator);
 
-		// Prefill only what the operator has not typed into yet.
 		if (m_bOperator)
 		{
 			if (m_wTimeoutEdit && m_wTimeoutEdit.GetText() == "")
@@ -371,6 +372,8 @@ class TK_CockpitMenu : MenuBase
 			m_Player.AskCompensate(m_sPendingOpId, m_sPendingTarget, m_iPendingAmount, m_iLookupRevision, m_sPendingReason);
 	}
 
+	// A stale revision comes back with the current one; it counts as the lookup of the
+	// pending target, or the next press would reset it to zero again.
 	protected void OnCommandResult(string opId, int status, string reasonCode, int total, int reserved, int revision)
 	{
 		if (opId != m_sPendingOpId)
@@ -413,8 +416,6 @@ class TK_CockpitMenu : MenuBase
 			default:
 			{
 				ShowResult(WidgetManager.Translate("#TK-Cockpit_Refused", WidgetManager.Translate("#TK-Reason_" + reasonCode)));
-				// A stale revision comes back with the current one; it counts as the lookup
-				// of the pending target, or the next press would reset it to zero again.
 				if (revision > 0 && !m_bPendingIsConfig)
 				{
 					m_sLookupTarget = m_sPendingTarget;
@@ -464,7 +465,7 @@ class TK_CockpitMenu : MenuBase
 	{
 		string detail = WidgetManager.Translate("#TK-Outcome_" + outcome);
 		if (reasonCode != "")
-			detail += " " + reasonCode;
+			detail += " " + WidgetManager.Translate("#TK-Reason_" + reasonCode);
 		AddLine(WidgetManager.Translate("#TK-Cockpit_AuditRow", time, type, detail, target, amount));
 	}
 

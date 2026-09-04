@@ -54,8 +54,11 @@ Response 200 with `{ "error": "player_unknown" }` when no record exists.
 
 ## POST /v1/commands
 
-Request envelope (all fields required; `subject` equals `actor` unless acting for
-someone else; `reason` required for cockpit types):
+Request envelope. Required for every type: `op_id`, `type`, `actor`, `subject`,
+`target`, `expected_revision`, `config_revision`, `payload`; `subject` equals `actor`
+unless acting for someone else. Required for cockpit types: `reason`. Optional, for
+`wallet.compensate` only: `target_online`. The backend and the game validate the same
+list.
 
 ```json
 {
@@ -113,13 +116,14 @@ Reason codes (stable, localized by the client as `TK-Reason_<code>`):
 | `contract_version_unknown` | boundary not ready because of the version (game-side) |
 | `identity_not_ready` | the actor has no audited identity yet (game-side) |
 | `busy` | the actor already has a command pending (game-side) |
+| `target_ambiguous` | a name held by several connected players (game-side) |
 | `unauthorized` | actor is not an operator |
-| `player_unknown` | target has no player record |
-| `invalid_amount` | zero, or outside the signed 64-bit range |
+| `player_unknown` | target has no player record, or the command named no target (game-side) |
+| `invalid_amount` | zero, or the amount or the resulting total outside the signed 32-bit range the game can represent |
 | `insufficient_funds` | debit larger than `total - reserved` |
 | `stale_revision` | `expected_revision` differs from the wallet's |
 | `reason_required` | empty reason on a cockpit command |
-| `op_id_payload_mismatch` | same `op_id`, different payload; audited as security |
+| `op_id_payload_mismatch` | same `op_id` with a different payload, type, actor, subject or target; audited as security |
 | `invalid_config_value` | out of the allowed range |
 
 ## GET /v1/audit?limit=20&before=<id>

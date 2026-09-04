@@ -2,6 +2,8 @@
 // refuse them, and the stable reason codes the game shows to players.
 package domain
 
+import "github.com/Jumbo13th/triad-klondike-ar/backend/internal/store"
+
 // ContractVersion is announced by /v1/health; the game refuses any other value.
 const ContractVersion = "1"
 
@@ -48,10 +50,22 @@ const (
 	OutcomeSecurity = "security"
 )
 
-// Runtime configuration bounds (contracts/backend-http.md).
+// Runtime configuration bounds live with the seed that must respect them too.
 const (
-	MinAnswerTimeoutS   = 1
-	MaxAnswerTimeoutS   = 120
-	MinRecheckIntervalS = 1
-	MaxRecheckIntervalS = 600
+	MinAnswerTimeoutS   = store.MinAnswerTimeoutS
+	MaxAnswerTimeoutS   = store.MaxAnswerTimeoutS
+	MinRecheckIntervalS = store.MinRecheckIntervalS
+	MaxRecheckIntervalS = store.MaxRecheckIntervalS
 )
+
+// Money range shared with the game, whose int is 32-bit: an amount or a total
+// outside it could not be shown or carried in an RPC (contracts/backend-http.md).
+const (
+	MinMoney = -2147483648
+	MaxMoney = 2147483647
+)
+
+// InMoneyRange reports whether the game can represent v.
+func InMoneyRange(v int64) bool {
+	return v >= MinMoney && v <= MaxMoney
+}

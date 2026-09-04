@@ -157,7 +157,8 @@ func (s *Service) Execute(cmd Command) (Answer, error) {
 			return err
 		}
 		if prior != nil {
-			if prior.PayloadHash != hash {
+			if prior.PayloadHash != hash || prior.Type != cmd.Type || prior.ActorUUID != cmd.Actor ||
+				prior.SubjectUUID != cmd.Subject || prior.Target != cmd.Target {
 				answer = Answer{Status: StatusRefused, ReasonCode: ReasonOpIDPayloadMismatch}
 				return ctx.audit(OutcomeSecurity, ReasonOpIDPayloadMismatch, "", "", 0, 0)
 			}
@@ -242,7 +243,7 @@ func (e *execution) compensate() (Answer, error) {
 		return e.refuse(ReasonReasonRequired, nil)
 	}
 	var p compensatePayload
-	if err := json.Unmarshal(e.cmd.Payload, &p); err != nil || p.Amount == 0 {
+	if err := json.Unmarshal(e.cmd.Payload, &p); err != nil || p.Amount == 0 || !InMoneyRange(p.Amount) {
 		return e.refuse(ReasonInvalidAmount, nil)
 	}
 	w, err := e.tx.GetWallet(e.cmd.Target)
@@ -257,6 +258,9 @@ func (e *execution) compensate() (Answer, error) {
 	}
 	if p.Amount < 0 && w.Total-w.Reserved < -p.Amount {
 		return e.refuse(ReasonInsufficientFunds, w)
+	}
+	if !InMoneyRange(w.Total + p.Amount) {
+		return e.refuse(ReasonInvalidAmount, w)
 	}
 	before, _ := json.Marshal(Wallet{Total: w.Total, Reserved: w.Reserved, Revision: w.Revision})
 	w.Total += p.Amount
