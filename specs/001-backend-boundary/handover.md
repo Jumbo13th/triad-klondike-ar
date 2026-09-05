@@ -35,12 +35,13 @@ which derived prefabs keep by engine convention. Both conf overrides carry the b
 game's GUID on purpose.
 
 Review of PR #1 (2026-09-05, T047): the code and document corrections are listed in
-tasks.md. Not played yet on the local server: the dropped connect answer for a player
+tasks.md. Played the same day on the local server, all passed (results under
+Scenarios B, D, D2 and E in quickstart.md): the dropped connect answer for a player
 who left, `target_ambiguous`, the empty-target refusal, the receipt push gated on
-dispatch-time presence, the re-parented spawn points (the vanilla `SpawnPoint_USSR.et`
-GUID is not in the script dump, so both factions derive from `SpawnPoint_Base.et`
-with the faction prefab's own overrides; re-parent in Workbench if preferred), and
-the string-table author fields. Play Scenario B and D2 once more after the merge.
+dispatch-time presence, the re-armed health timer, the translated audit reasons, and
+the re-parented spawn points (the vanilla `SpawnPoint_USSR.et` GUID is not in the
+script dump, so both factions derive from `SpawnPoint_Base.et` with the faction
+prefab's own overrides; re-parent in Workbench if preferred).
 
 Quickstart results (details under each scenario in quickstart.md):
 - A readiness: passed 2026-09-03 (Workbench)

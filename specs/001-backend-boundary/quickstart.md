@@ -143,6 +143,12 @@ Result 2026-09-04 for step 3, local dedicated server: passed. Two clients under 
 platform name got `…fc7c0002557e` (operator, first joiner) and `…fc7c0c7b340f`
 (player), stable across four joins; the backend console showed both connects with
 their roles.
+4. With both clients connected under one name, credit by NAME. Expected: refused
+   `target_ambiguous`, no command reaches the backend; the identity still works.
+
+Result 2026-09-05 for step 4, local dedicated server: passed. The re-parented spawn
+points (both factions derived from `SpawnPoint_Base.et`) loaded and spawned both
+clients at their camps the same session.
 
 Result 2026-09-03 for step 2, from Workbench: passed. The balance line showed the
 identity refusal in every boundary state, and the server never called connect. Step 1
@@ -165,6 +171,11 @@ both clients share the name; offline targets need the identity. The receipt push
 at connect is not shown by a panel opened afterwards (panel keeps no receipt
 history); redo scope.
 
+Result 2026-09-05, replayed after the review fixes (receipt pushed only when the
+target was online at dispatch): passed in both forms, online credit delivered live
+and away credit claimed at rejoin. An empty target on Apply was refused
+`player_unknown` and the operator's own wallet stayed unchanged.
+
 Result 2026-09-04, replayed with the retry: passed. Both clients joined with the
 backend stopped (connects failed with HTTP 0, panels unreachable with identity not
 confirmed); after the backend start the server log showed `UNREACHABLE -> READY`
@@ -174,6 +185,17 @@ rejoin. Observation at the time: the player's connect claimed a receipt that had
 already been delivered live before the outage, because live receipts were never
 marked delivered. Settled the same day by `target_online` on the compensate envelope
 (T045); the receipt-delivery result above shows the settled behaviour.
+
+3. Stop the backend, join with the player, start the backend, and quit the player
+   client the moment the log prints `UNREACHABLE -> READY` (the repeated connect is
+   then in flight). Expected: no session is created for the departed player; a
+   rejoin under the same name gets the same development identity, not a further
+   numbered one.
+
+Result 2026-09-05 for step 3, local dedicated server: passed. The connect went out
+at the READY line, the player disconnected before its answer (engine logged
+`missing player [5]`), and the rejoin printed the same identity `…fc7c0c7b340f`; the
+backend console showed both connects under that one identity.
 
 ## Scenario E: runtime regulation (FR-016)
 
@@ -187,6 +209,11 @@ Result 2026-09-04, local dedicated server: passed for two consecutive changes
 next poll. The timeout half (Scenario C after 2 s) was not played. A panel opened
 before the change keeps the old header until Refresh, by design (D4: values travel
 with the health answer).
+
+Result 2026-09-05, replayed after the review fix (health timer re-armed on an
+interval change): re-check interval 10 s to 5 s accepted at configuration revision
+4; a panel opened afterwards showed 5 s, and the audit list showed refusal reasons
+translated.
 
 ## Scenario F: language (SC-007)
 
