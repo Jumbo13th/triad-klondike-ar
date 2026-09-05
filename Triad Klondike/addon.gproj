@@ -1,0 +1,83 @@
+GameProject {
+ ID "TriadKlondike"
+ GUID "6A473EF2C118B6D4"
+ TITLE "Triad Klondike"
+ Dependencies {
+  "58D0FB3206B6F859"
+ }
+ Configurations {
+  GameProjectConfig PC {
+   WidgetManagerSettings WidgetManagerSettings "{1D2BACC7FBBB85B7}" {
+    StringTables {
+     StringTableDefinition "{00F67019458B56A2}" {
+      StringTableSource "{2E018B3F6A0D8C47}Language/tk_localization.st"
+      Languages {
+       LanguageDefinition "{6BDD0C5CC20DF6A7}" {
+        Code "cs_cz"
+        StringTableRuntime "{F3CE1FBC37073CBF}Language/tk_localization.cs_cz.conf"
+       }
+       LanguageDefinition "{84E4AE55A3A210F9}" {
+        Code "de_de"
+        StringTableRuntime "{F5A5C5E6C8BC4E4B}Language/tk_localization.de_de.conf"
+       }
+       LanguageDefinition "{D25542D255A3E054}" {
+        Code "en_us"
+        StringTableRuntime "{FA416D6CBD2CCF4A}Language/tk_localization.en_us.conf"
+       }
+       LanguageDefinition "{6A93E4E928359BC4}" {
+        Code "es_es"
+        StringTableRuntime "{9A7BF6A6775C1A07}Language/tk_localization.es_es.conf"
+       }
+       LanguageDefinition "{33D12ED1411E91A3}" {
+        Code "fr_fr"
+        StringTableRuntime "{F994CBE44FE3C517}Language/tk_localization.fr_fr.conf"
+       }
+       LanguageDefinition "{2C5A5646F17CDD21}" {
+        Code "it_it"
+        StringTableRuntime "{CE0825C9F0A8EC30}Language/tk_localization.it_it.conf"
+       }
+       LanguageDefinition "{C6DF9D54D61E4138}" {
+        Code "ja_jp"
+        StringTableRuntime "{8B9E484CB2BD2A5F}Language/tk_localization.ja_jp.conf"
+       }
+       LanguageDefinition "{F72674F508BF5B6E}" {
+        Code "ko_kr"
+        StringTableRuntime "{138BAE5479378DA4}Language/tk_localization.ko_kr.conf"
+       }
+       LanguageDefinition "{6D57CA7695AEE739}" {
+        Code "pl_pl"
+        StringTableRuntime "{197029C0618E01A2}Language/tk_localization.pl_pl.conf"
+       }
+       LanguageDefinition "{EFDA70AB937428C2}" {
+        Code "pt_br"
+        StringTableRuntime "{3BA2737DD8D139EB}Language/tk_localization.pt_br.conf"
+       }
+       LanguageDefinition "{0063682596A54EE1}" {
+        Code "ru_ru"
+        StringTableRuntime "{8EE4A173CCC72508}Language/tk_localization.ru_ru.conf"
+       }
+       LanguageDefinition "{0966197FC371D450}" {
+        Code "uk_ua"
+        StringTableRuntime "{2B8096C61E4E242F}Language/tk_localization.uk_ua.conf"
+       }
+       LanguageDefinition "{4B02534F9C32E6D9}" {
+        Code "zh_cn"
+        StringTableRuntime "{5F1DD1F71EB3CE91}Language/tk_localization.zh_cn.conf"
+       }
+      }
+     }
+    }
+   }
+  }
+  GameProjectConfig XBOX_ONE {
+  }
+  GameProjectConfig XBOX_SERIES {
+  }
+  GameProjectConfig PS4 {
+  }
+  GameProjectConfig PS5 {
+  }
+  GameProjectConfig HEADLESS {
+  }
+ }
+}

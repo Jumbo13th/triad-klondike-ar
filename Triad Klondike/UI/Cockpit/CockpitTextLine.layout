@@ -1,0 +1,11 @@
+TextWidgetClass {
+ Name "CockpitTextLine"
+ Slot LayoutSlot "{22078DC84BF9A969}" {
+  HorizontalAlign 3
+  Padding 10 3 10 3
+ }
+ Color 0.62 0.62 0.62 1
+ Text ""
+ "Font Size" 13
+ Wrap 1
+}

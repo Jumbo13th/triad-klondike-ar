@@ -1,0 +1,32 @@
+SCR_SpawnPoint SpawnUS1 : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et" {
+ coords 1675.5 37.9 2588.2
+ m_sFaction "US"
+ m_Info SCR_UIInfo "{5E5B48D329413901}" {
+  Name "US camp"
+  Icon "{46FB2FB2C2125A3C}UI/Textures/Flags/US-flag-base-3it.edds"
+ }
+}
+SCR_SpawnPoint SpawnUS2 : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et" {
+ coords 1669.8 37.9 2589.6
+ m_sFaction "US"
+ m_Info SCR_UIInfo "{72FA192ED58D352C}" {
+  Name "US camp"
+  Icon "{46FB2FB2C2125A3C}UI/Textures/Flags/US-flag-base-3it.edds"
+ }
+}
+SCR_SpawnPoint SpawnUSSR1 : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et" {
+ coords 1840.2 26.5 1938.4
+ m_sFaction "USSR"
+ m_Info SCR_UIInfo "{78005E90D7DDF135}" {
+  Name "USSR camp"
+  Icon "{50824EB9F2C215AB}UI/Textures/Flags/USSR-flag-base-3it.edds"
+ }
+}
+SCR_SpawnPoint SpawnUSSR2 : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et" {
+ coords 1834.6 26.5 1940.1
+ m_sFaction "USSR"
+ m_Info SCR_UIInfo "{491A3D46E1029C68}" {
+  Name "USSR camp"
+  Icon "{50824EB9F2C215AB}UI/Textures/Flags/USSR-flag-base-3it.edds"
+ }
+}

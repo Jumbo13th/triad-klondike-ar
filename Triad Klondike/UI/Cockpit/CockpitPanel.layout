@@ -1,0 +1,789 @@
+FrameWidgetClass {
+ Name "CockpitPanel"
+ "Z Order" 9500
+ {
+  ImageWidgetClass "{0834AC04406F0042}" {
+   Name "DimBackground"
+   Slot FrameWidgetSlot "{FDA8F720B1C91D83}" {
+    Anchor 0 0 1 1
+    OffsetLeft 0
+    OffsetTop 0
+    OffsetRight 0
+    OffsetBottom 0
+   }
+   Color 0 0 0 0.85
+  }
+  ButtonWidgetClass "{EE9AF3F0A9CD7E5F}" {
+   Name "InputBlocker"
+   Slot FrameWidgetSlot "{F47E09037C4E96BB}" {
+    Anchor 0 0 1 1
+    OffsetLeft 0
+    OffsetTop 0
+    OffsetRight 0
+    OffsetBottom 0
+   }
+   Color 1 1 1 0
+   "no focus" 1
+   components {
+    SCR_ButtonBaseComponent "{C892787E62F441B6}" {
+     m_sSoundHovered ""
+     m_sSoundClicked ""
+     m_BackgroundDefault 1 1 1 0
+     m_BackgroundHovered 1 1 1 0
+     m_BackgroundClicked 1 1 1 0
+     m_bShowBorderOnFocus 0
+     m_bNoBorderAnimation 1
+    }
+   }
+  }
+  FrameWidgetClass "{04CB435E98CA8F2C}" {
+   Name "Panel"
+   Slot FrameWidgetSlot "{4F36E52BC240D0B1}" {
+    Anchor 0.5 0.5 0.5 0.5
+    PositionX -480
+    OffsetLeft -480
+    PositionY -430
+    OffsetTop -430
+    SizeX 960
+    OffsetRight -480
+    SizeY 860
+    OffsetBottom -430
+   }
+   {
+    ImageWidgetClass "{94514E60215703A4}" {
+     Name "Background"
+     Slot FrameWidgetSlot "{6A9C23BDE1A883DC}" {
+      Anchor 0 0 1 1
+      OffsetLeft 0
+      OffsetTop 0
+      OffsetRight 0
+      OffsetBottom 0
+     }
+     Color 0.007 0.012 0.014 1
+    }
+    ImageWidgetClass "{311EB8A880FF1328}" {
+     Name "Accent"
+     Slot FrameWidgetSlot "{DE4A57E2EA545912}" {
+      Anchor 0 0 0 1
+      OffsetLeft 0
+      OffsetTop 0
+      SizeX 3
+      OffsetRight -3
+      OffsetBottom 0
+     }
+     Color 0.761 0.392 0.078 1
+    }
+    TextWidgetClass "{AC654868FC384E98}" {
+     Name "Title"
+     Slot FrameWidgetSlot "{81FDC3EA1FB9C8E9}" {
+      Anchor 0 0 0 0
+      PositionX 16
+      OffsetLeft 16
+      PositionY 12
+      OffsetTop 12
+      SizeX 900
+      OffsetRight -916
+      SizeY 30
+      OffsetBottom -42
+     }
+     Color 0.761 0.392 0.078 1
+     Text "#TK-Cockpit_Title"
+     "Font Size" 20
+     "Vertical Alignment" Center
+     FontProperties FontProperties "{E4984446BDEFCDC5}" {
+      OutlineSize 2
+     }
+    }
+    TextWidgetClass "{7422FECB0ACB5CD4}" {
+     Name "StateText"
+     Slot FrameWidgetSlot "{2F302CCB0685ABF5}" {
+      Anchor 0 0 0 0
+      PositionX 16
+      OffsetLeft 16
+      PositionY 48
+      OffsetTop 48
+      SizeX 920
+      OffsetRight -936
+      SizeY 24
+      OffsetBottom -72
+     }
+     Color 0.92 0.92 0.92 1
+     Text ""
+     "Font Size" 14
+     "Vertical Alignment" Center
+    }
+    TextWidgetClass "{9A1865E15CA60523}" {
+     Name "ContractText"
+     Slot FrameWidgetSlot "{B8D413C958EE2A49}" {
+      Anchor 0 0 0 0
+      PositionX 16
+      OffsetLeft 16
+      PositionY 72
+      OffsetTop 72
+      SizeX 920
+      OffsetRight -936
+      SizeY 22
+      OffsetBottom -94
+     }
+     Color 0.6 0.6 0.6 1
+     Text ""
+     "Font Size" 13
+     "Vertical Alignment" Center
+    }
+    TextWidgetClass "{6D8A27A2F9D71931}" {
+     Name "ConfigText"
+     Slot FrameWidgetSlot "{87FB7CE37BB1AC4B}" {
+      Anchor 0 0 0 0
+      PositionX 16
+      OffsetLeft 16
+      PositionY 94
+      OffsetTop 94
+      SizeX 920
+      OffsetRight -936
+      SizeY 22
+      OffsetBottom -116
+     }
+     Color 0.6 0.6 0.6 1
+     Text ""
+     "Font Size" 13
+     "Vertical Alignment" Center
+    }
+    TextWidgetClass "{2EEA0FE6D9C07EE7}" {
+     Name "PlayerBalanceText"
+     Slot FrameWidgetSlot "{D593BE092BF4100D}" {
+      Anchor 0 0 0 0
+      PositionX 16
+      OffsetLeft 16
+      PositionY 126
+      OffsetTop 126
+      SizeX 920
+      OffsetRight -936
+      SizeY 26
+      OffsetBottom -152
+     }
+     Color 0.92 0.92 0.92 1
+     Text ""
+     "Font Size" 16
+     "Vertical Alignment" Center
+    }
+    TextWidgetClass "{78BBC5FB7F924F45}" {
+     Name "ReceiptText"
+     Slot FrameWidgetSlot "{06624B0B42968492}" {
+      Anchor 0 0 0 0
+      PositionX 16
+      OffsetLeft 16
+      PositionY 152
+      OffsetTop 152
+      SizeX 920
+      OffsetRight -936
+      SizeY 22
+      OffsetBottom -174
+     }
+     Color 0.6 0.6 0.6 1
+     Text ""
+     "Font Size" 13
+     "Vertical Alignment" Center
+    }
+    FrameWidgetClass "{E48F8735E06FBB9E}" {
+     Name "OperatorSection"
+     Slot FrameWidgetSlot "{68D6EC6F4A7699F7}" {
+      Anchor 0 0 1 1
+      OffsetLeft 16
+      OffsetTop 186
+      OffsetRight 16
+      OffsetBottom 64
+     }
+     {
+      TextWidgetClass "{54DABA6BF936C15E}" {
+     Name "WalletLookupLabel"
+     Slot FrameWidgetSlot "{261664328E967CA7}" {
+      Anchor 0 0 0 0
+      PositionX 0
+      OffsetLeft 0
+      PositionY 0
+      OffsetTop 0
+      SizeX 220
+      OffsetRight -220
+      SizeY 30
+      OffsetBottom -30
+     }
+     Color 0.85 0.85 0.85 1
+     Text "#TK-Cockpit_WalletLookup"
+     "Font Size" 14
+     "Vertical Alignment" Center
+    }
+      EditBoxWidgetClass "{248E2C0D14DFCE80}" {
+     Name "WalletUuidEdit"
+     Slot FrameWidgetSlot "{961D770E5C506228}" {
+      Anchor 0 0 0 0
+      PositionX 230
+      OffsetLeft 230
+      PositionY 0
+      OffsetTop 0
+      SizeX 470
+      OffsetRight -700
+      SizeY 30
+      OffsetBottom -30
+     }
+     Color 0.92 0.92 0.92 1
+     "Font Size" 14
+     "Use placeholder text" 1
+     "Placeholder color" 0.45 0.45 0.45 1
+     "Placeholder text" "#TK-Cockpit_WalletPlaceholder"
+    }
+      ButtonWidgetClass "{1FC9824797E1D0FC}" {
+     Name "LookupButton"
+     Slot FrameWidgetSlot "{232869AF69968A89}" {
+      Anchor 0 0 0 0
+      PositionX 710
+      OffsetLeft 710
+      PositionY 0
+      OffsetTop 0
+      SizeX 200
+      OffsetRight -910
+      SizeY 30
+      OffsetBottom -30
+     }
+     Color 0.15 0.15 0.15 0.9
+     components {
+      SCR_ButtonBaseComponent "{AEE979CF61E6BD57}" {
+       m_BackgroundDefault 0.15 0.15 0.15 0.9
+       m_BackgroundHovered 0.28 0.28 0.28 0.95
+       m_BackgroundClicked 0.45 0.31 0.16 1
+      }
+     }
+     {
+      FrameWidgetClass "{1EA6EE07BEE27FCE}" {
+       Name "LookupButtonFrame"
+       Slot ButtonWidgetSlot "{62BA7A92446DFB74}" {
+       }
+       {
+        TextWidgetClass "{C9DEA37F783AE953}" {
+         Name "LookupButtonText"
+         Slot FrameWidgetSlot "{A9EC6EB96719C2C7}" {
+          OffsetLeft 0
+          OffsetTop 0
+          SizeX 200
+          OffsetRight -200
+          SizeY 30
+          OffsetBottom -30
+         }
+         Color 0.92 0.92 0.92 1
+         Text "#TK-Cockpit_Refresh"
+         "Font Size" 14
+         "Horizontal Alignment" Center
+         "Vertical Alignment" Center
+        }
+       }
+      }
+     }
+    }
+      TextWidgetClass "{2B9A4ECA53BA4C64}" {
+     Name "WalletResultText"
+     Slot FrameWidgetSlot "{263C0888C64D6ECD}" {
+      Anchor 0 0 0 0
+      PositionX 0
+      OffsetLeft 0
+      PositionY 34
+      OffsetTop 34
+      SizeX 910
+      OffsetRight -910
+      SizeY 22
+      OffsetBottom -56
+     }
+     Color 0.6 0.6 0.6 1
+     Text ""
+     "Font Size" 13
+     "Vertical Alignment" Center
+    }
+      TextWidgetClass "{B93526BCE282927B}" {
+     Name "AmountLabel"
+     Slot FrameWidgetSlot "{F2F06AB47CEA4D81}" {
+      Anchor 0 0 0 0
+      PositionX 0
+      OffsetLeft 0
+      PositionY 66
+      OffsetTop 66
+      SizeX 220
+      OffsetRight -220
+      SizeY 30
+      OffsetBottom -96
+     }
+     Color 0.85 0.85 0.85 1
+     Text "#TK-Cockpit_Amount"
+     "Font Size" 14
+     "Vertical Alignment" Center
+    }
+      EditBoxWidgetClass "{34CF1321B0D735A7}" {
+     Name "AmountEdit"
+     Slot FrameWidgetSlot "{D6511C93E2823676}" {
+      Anchor 0 0 0 0
+      PositionX 230
+      OffsetLeft 230
+      PositionY 66
+      OffsetTop 66
+      SizeX 200
+      OffsetRight -430
+      SizeY 30
+      OffsetBottom -96
+     }
+     Color 0.92 0.92 0.92 1
+     "Font Size" 14
+     "Use placeholder text" 1
+     "Placeholder color" 0.45 0.45 0.45 1
+     "Placeholder text" "0"
+    }
+      TextWidgetClass "{4AA0972BBFFA44E1}" {
+     Name "ReasonLabel"
+     Slot FrameWidgetSlot "{ECCC38623AA099CB}" {
+      Anchor 0 0 0 0
+      PositionX 0
+      OffsetLeft 0
+      PositionY 102
+      OffsetTop 102
+      SizeX 220
+      OffsetRight -220
+      SizeY 30
+      OffsetBottom -132
+     }
+     Color 0.85 0.85 0.85 1
+     Text "#TK-Cockpit_Reason"
+     "Font Size" 14
+     "Vertical Alignment" Center
+    }
+      EditBoxWidgetClass "{71A9B79E8A728214}" {
+     Name "ReasonEdit"
+     Slot FrameWidgetSlot "{BF4D273C1058F6CB}" {
+      Anchor 0 0 0 0
+      PositionX 230
+      OffsetLeft 230
+      PositionY 102
+      OffsetTop 102
+      SizeX 680
+      OffsetRight -910
+      SizeY 30
+      OffsetBottom -132
+     }
+     Color 0.92 0.92 0.92 1
+     "Font Size" 14
+     "Use placeholder text" 1
+     "Placeholder color" 0.45 0.45 0.45 1
+     "Placeholder text" ""
+    }
+      ButtonWidgetClass "{3BAB59D7DD92BEBF}" {
+     Name "CreditButton"
+     Slot FrameWidgetSlot "{75019474A970171A}" {
+      Anchor 0 0 0 0
+      PositionX 230
+      OffsetLeft 230
+      PositionY 138
+      OffsetTop 138
+      SizeX 220
+      OffsetRight -450
+      SizeY 30
+      OffsetBottom -168
+     }
+     Color 0.15 0.15 0.15 0.9
+     components {
+      SCR_ButtonBaseComponent "{476CA6F7FDD0EE12}" {
+       m_BackgroundDefault 0.15 0.15 0.15 0.9
+       m_BackgroundHovered 0.28 0.28 0.28 0.95
+       m_BackgroundClicked 0.45 0.31 0.16 1
+      }
+     }
+     {
+      FrameWidgetClass "{DA18812272E396DC}" {
+       Name "CreditButtonFrame"
+       Slot ButtonWidgetSlot "{FCC1F813DBAA3D8E}" {
+       }
+       {
+        TextWidgetClass "{AD9362FFFD5D9ABD}" {
+         Name "CreditButtonText"
+         Slot FrameWidgetSlot "{FB4145A52333C165}" {
+          OffsetLeft 0
+          OffsetTop 0
+          SizeX 220
+          OffsetRight -220
+          SizeY 30
+          OffsetBottom -30
+         }
+         Color 0.92 0.92 0.92 1
+         Text "#TK-Cockpit_Apply"
+         "Font Size" 14
+         "Horizontal Alignment" Center
+         "Vertical Alignment" Center
+        }
+       }
+      }
+     }
+    }
+      ButtonWidgetClass "{861171B0F46E9A6A}" {
+     Name "RetryButton"
+     Slot FrameWidgetSlot "{D32D1309B84B0F97}" {
+      Anchor 0 0 0 0
+      PositionX 460
+      OffsetLeft 460
+      PositionY 138
+      OffsetTop 138
+      SizeX 160
+      OffsetRight -620
+      SizeY 30
+      OffsetBottom -168
+     }
+     Color 0.15 0.15 0.15 0.9
+     components {
+      SCR_ButtonBaseComponent "{D707F4D756A5007D}" {
+       m_BackgroundDefault 0.15 0.15 0.15 0.9
+       m_BackgroundHovered 0.28 0.28 0.28 0.95
+       m_BackgroundClicked 0.45 0.31 0.16 1
+      }
+     }
+     {
+      FrameWidgetClass "{1BCF5CC8DA71AE4C}" {
+       Name "RetryButtonFrame"
+       Slot ButtonWidgetSlot "{0EA06A5746BE0F22}" {
+       }
+       {
+        TextWidgetClass "{B6BE163A8DC27FD3}" {
+         Name "RetryButtonText"
+         Slot FrameWidgetSlot "{1BEA867CE8C2831D}" {
+          OffsetLeft 0
+          OffsetTop 0
+          SizeX 160
+          OffsetRight -160
+          SizeY 30
+          OffsetBottom -30
+         }
+         Color 0.92 0.92 0.92 1
+         Text "#TK-Cockpit_Retry"
+         "Font Size" 14
+         "Horizontal Alignment" Center
+         "Vertical Alignment" Center
+        }
+       }
+      }
+     }
+    }
+      TextWidgetClass "{1B409CDE16E613D7}" {
+     Name "ResultText"
+     Slot FrameWidgetSlot "{90A4EA09C73176DB}" {
+      Anchor 0 0 0 0
+      PositionX 0
+      OffsetLeft 0
+      PositionY 172
+      OffsetTop 172
+      SizeX 910
+      OffsetRight -910
+      SizeY 22
+      OffsetBottom -194
+     }
+     Color 0.92 0.92 0.92 1
+     Text ""
+     "Font Size" 13
+     "Vertical Alignment" Center
+    }
+      TextWidgetClass "{363765897F61F103}" {
+     Name "TimeoutLabel"
+     Slot FrameWidgetSlot "{88E91FC47094A19A}" {
+      Anchor 0 0 0 0
+      PositionX 0
+      OffsetLeft 0
+      PositionY 206
+      OffsetTop 206
+      SizeX 220
+      OffsetRight -220
+      SizeY 30
+      OffsetBottom -236
+     }
+     Color 0.85 0.85 0.85 1
+     Text "#TK-Cockpit_Timeout"
+     "Font Size" 14
+     "Vertical Alignment" Center
+    }
+      EditBoxWidgetClass "{B23FF8903615051E}" {
+     Name "TimeoutEdit"
+     Slot FrameWidgetSlot "{9B4180EDB4AAF08D}" {
+      Anchor 0 0 0 0
+      PositionX 230
+      OffsetLeft 230
+      PositionY 206
+      OffsetTop 206
+      SizeX 120
+      OffsetRight -350
+      SizeY 30
+      OffsetBottom -236
+     }
+     Color 0.92 0.92 0.92 1
+     "Font Size" 14
+     "Use placeholder text" 1
+     "Placeholder color" 0.45 0.45 0.45 1
+     "Placeholder text" "5"
+    }
+      TextWidgetClass "{CBF484DD14DAE1CB}" {
+     Name "IntervalLabel"
+     Slot FrameWidgetSlot "{B5FDBC847E0A2427}" {
+      Anchor 0 0 0 0
+      PositionX 0
+      OffsetLeft 0
+      PositionY 242
+      OffsetTop 242
+      SizeX 220
+      OffsetRight -220
+      SizeY 30
+      OffsetBottom -272
+     }
+     Color 0.85 0.85 0.85 1
+     Text "#TK-Cockpit_Interval"
+     "Font Size" 14
+     "Vertical Alignment" Center
+    }
+      EditBoxWidgetClass "{782FCEF38F4DB84C}" {
+     Name "IntervalEdit"
+     Slot FrameWidgetSlot "{5D3E832C757B84DE}" {
+      Anchor 0 0 0 0
+      PositionX 230
+      OffsetLeft 230
+      PositionY 242
+      OffsetTop 242
+      SizeX 120
+      OffsetRight -350
+      SizeY 30
+      OffsetBottom -272
+     }
+     Color 0.92 0.92 0.92 1
+     "Font Size" 14
+     "Use placeholder text" 1
+     "Placeholder color" 0.45 0.45 0.45 1
+     "Placeholder text" "15"
+    }
+      ButtonWidgetClass "{BD18BC3545650E69}" {
+     Name "ApplyConfigButton"
+     Slot FrameWidgetSlot "{7AF472D6E05669CB}" {
+      Anchor 0 0 0 0
+      PositionX 360
+      OffsetLeft 360
+      PositionY 242
+      OffsetTop 242
+      SizeX 260
+      OffsetRight -620
+      SizeY 30
+      OffsetBottom -272
+     }
+     Color 0.15 0.15 0.15 0.9
+     components {
+      SCR_ButtonBaseComponent "{58B61E9EBBF6C362}" {
+       m_BackgroundDefault 0.15 0.15 0.15 0.9
+       m_BackgroundHovered 0.28 0.28 0.28 0.95
+       m_BackgroundClicked 0.45 0.31 0.16 1
+      }
+     }
+     {
+      FrameWidgetClass "{796E6B4FB3027503}" {
+       Name "ApplyConfigButtonFrame"
+       Slot ButtonWidgetSlot "{9FC26E4377C6E9A5}" {
+       }
+       {
+        TextWidgetClass "{743146A69BCA4119}" {
+         Name "ApplyConfigButtonText"
+         Slot FrameWidgetSlot "{217D3CE204556760}" {
+          OffsetLeft 0
+          OffsetTop 0
+          SizeX 260
+          OffsetRight -260
+          SizeY 30
+          OffsetBottom -30
+         }
+         Color 0.92 0.92 0.92 1
+         Text "#TK-Cockpit_ApplyConfig"
+         "Font Size" 14
+         "Horizontal Alignment" Center
+         "Vertical Alignment" Center
+        }
+       }
+      }
+     }
+    }
+      TextWidgetClass "{800DF1BA9C8D53EA}" {
+     Name "AuditLabel"
+     Slot FrameWidgetSlot "{4427B8269987C971}" {
+      Anchor 0 0 0 0
+      PositionX 0
+      OffsetLeft 0
+      PositionY 284
+      OffsetTop 284
+      SizeX 910
+      OffsetRight -910
+      SizeY 26
+      OffsetBottom -310
+     }
+     Color 0.85 0.85 0.85 1
+     Text "#TK-Cockpit_Audit"
+     "Font Size" 14
+     "Vertical Alignment" Center
+    }
+      ScrollLayoutWidgetClass "{DCCE709BD29B8B0A}" {
+       Name "AuditScroll"
+       Slot FrameWidgetSlot "{2A383E383F0A2CFD}" {
+        Anchor 0 0 1 1
+        OffsetLeft 0
+        OffsetTop 312
+        OffsetRight 0
+        OffsetBottom 0
+       }
+       {
+        VerticalLayoutWidgetClass "{28AF6284BE379D03}" {
+         Name "AuditList"
+         Slot AlignableSlot "{66619E1AA85269A4}" {
+          HorizontalAlign 3
+          Padding 0 0 14 4
+         }
+        }
+       }
+      }
+     }
+    }
+    ButtonWidgetClass "{0B89E5B098D6AF65}" {
+     Name "RefreshButton"
+     Slot FrameWidgetSlot "{2D6028D5612C6DD0}" {
+      Anchor 0 1 0 1
+      PositionX 16
+      OffsetLeft 16
+      PositionY -52
+      OffsetTop -52
+      SizeX 170
+      OffsetRight -186
+      SizeY 36
+      OffsetBottom 16
+     }
+     Color 0.15 0.15 0.15 0.9
+     components {
+      SCR_ButtonBaseComponent "{C505AB205AE41AC3}" {
+       m_BackgroundDefault 0.15 0.15 0.15 0.9
+       m_BackgroundHovered 0.28 0.28 0.28 0.95
+       m_BackgroundClicked 0.45 0.31 0.16 1
+      }
+     }
+     {
+      FrameWidgetClass "{0060017FB09C2E24}" {
+       Name "RefreshButtonFrame"
+       Slot ButtonWidgetSlot "{4A2CB2FFD0308908}" {
+       }
+       {
+        TextWidgetClass "{4D19BE7D30EDE60F}" {
+         Name "RefreshButtonText"
+         Slot FrameWidgetSlot "{994779A96DD75A10}" {
+          OffsetLeft 0
+          OffsetTop 0
+          SizeX 170
+          OffsetRight -170
+          SizeY 36
+          OffsetBottom -36
+         }
+         Color 0.92 0.92 0.92 1
+         Text "#TK-Cockpit_Refresh"
+         "Font Size" 14
+         "Horizontal Alignment" Center
+         "Vertical Alignment" Center
+        }
+       }
+      }
+     }
+    }
+    ButtonWidgetClass "{C46EC908CFA9F0A8}" {
+     Name "AuditMoreButton"
+     Slot FrameWidgetSlot "{9B2769A8D0278A54}" {
+      Anchor 0 1 0 1
+      PositionX 200
+      OffsetLeft 200
+      PositionY -52
+      OffsetTop -52
+      SizeX 170
+      OffsetRight -370
+      SizeY 36
+      OffsetBottom 16
+     }
+     Color 0.15 0.15 0.15 0.9
+     components {
+      SCR_ButtonBaseComponent "{01F08E741308CD1E}" {
+       m_BackgroundDefault 0.15 0.15 0.15 0.9
+       m_BackgroundHovered 0.28 0.28 0.28 0.95
+       m_BackgroundClicked 0.45 0.31 0.16 1
+      }
+     }
+     {
+      FrameWidgetClass "{5DCAF37DCD49D8EF}" {
+       Name "AuditMoreButtonFrame"
+       Slot ButtonWidgetSlot "{78A99FB44E9426F7}" {
+       }
+       {
+        TextWidgetClass "{198E2347F71829FA}" {
+         Name "AuditMoreButtonText"
+         Slot FrameWidgetSlot "{F13B72AA6233C1C1}" {
+          OffsetLeft 0
+          OffsetTop 0
+          SizeX 170
+          OffsetRight -170
+          SizeY 36
+          OffsetBottom -36
+         }
+         Color 0.92 0.92 0.92 1
+         Text "#TK-Cockpit_More"
+         "Font Size" 14
+         "Horizontal Alignment" Center
+         "Vertical Alignment" Center
+        }
+       }
+      }
+     }
+    }
+    ButtonWidgetClass "{839031D84316EB56}" {
+     Name "CloseButton"
+     Slot FrameWidgetSlot "{6DCCEF6A6D592A29}" {
+      Anchor 1 1 1 1
+      PositionX -156
+      OffsetLeft -156
+      PositionY -52
+      OffsetTop -52
+      SizeX 140
+      OffsetRight 16
+      SizeY 36
+      OffsetBottom 16
+     }
+     Color 0.15 0.15 0.15 0.9
+     components {
+      SCR_ButtonBaseComponent "{36CB19939768AEED}" {
+       m_BackgroundDefault 0.15 0.15 0.15 0.9
+       m_BackgroundHovered 0.28 0.28 0.28 0.95
+       m_BackgroundClicked 0.45 0.31 0.16 1
+      }
+     }
+     {
+      FrameWidgetClass "{E3C79D1D3CE04198}" {
+       Name "CloseButtonFrame"
+       Slot ButtonWidgetSlot "{FBBDF28852F49AE8}" {
+       }
+       {
+        TextWidgetClass "{E078058C46082F1C}" {
+         Name "CloseButtonText"
+         Slot FrameWidgetSlot "{F94928615EE37114}" {
+          OffsetLeft 0
+          OffsetTop 0
+          SizeX 140
+          OffsetRight -140
+          SizeY 36
+          OffsetBottom -36
+         }
+         Color 0.92 0.92 0.92 1
+         Text "#TK-Cockpit_Close"
+         "Font Size" 14
+         "Horizontal Alignment" Center
+         "Vertical Alignment" Center
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

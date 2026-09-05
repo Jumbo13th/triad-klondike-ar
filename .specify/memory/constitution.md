@@ -1,18 +1,17 @@
 <!--
 Sync Impact Report
-- Version: 1.0.0 (initial ratification)
-- Sections: Core Principles I–VII (Engine Fidelity, Ask Never Assume, KISS, YAGNI,
-  Server Authority and Replication Discipline, Localhost Backend, Comments and Code
-  Hygiene); Engine and Asset Constraints; Persistence and Data; Documentation and
-  Language; Open Source Standards; Testability and the Demo World; Development
-  Workflow; Governance
-- Templates requiring updates: none checked in this pass
-  (.specify/templates/plan-template.md, spec-template.md, tasks-template.md read the
-  constitution at runtime; review their "Constitution Check" wording on first /speckit-plan)
-- Follow-up TODOs: docs/TECHNICAL-DESIGN.md §2.5, §4, §16.3, and §18.2 still describe
-  the native save bundle as the single source of truth and rule out any external
-  service in the authority path. Revise them through the source order in Documentation
-  and Language before the first backend-touching /speckit-plan.
+- Version: 1.1.0 → 1.2.0 (MINOR: guidance added, no principle redefined)
+- Added: Principle VI bullet "The backend logs what it decides, not what it sees"
+  (one line per decision: start, connect, command, configuration change, unreadable
+  request; no health polls or reads, nothing twice).
+- Previous (1.0.0 → 1.1.0): Principle I source 3 (the Conflict game mode as the
+  in-game reference for prefabs, layouts and UI flows; Lite Lobby moved to source 4);
+  section "User Interface"; Development Workflow bullet "Audits and reviews have done
+  criteria".
+- Templates requiring updates: none; plan-template.md's constitution check reads this
+  file at runtime. Backend features add a "logging" row to their constitution check.
+- Follow-up TODOs: none. Feature 001's backend was brought in line with the logging
+  bullet on 2026-09-04.
 -->
 
 # Triad: Klondike Constitution
@@ -34,7 +33,13 @@ traceable to one of these sources, in this order of authority:
    (`Arma-Reforger-Script-Diff/`, tagged per release — check out the shipped tag).
 2. The official Enfusion documentation for replication, persistence, components,
    serialisation, and configuration.
-3. Lite Lobby (`lite-lobby-ar/`), the community's shipped addon, for patterns already
+3. The Conflict game mode inside those official sources (`scripts/Game/Campaign/`,
+   `GameData/Prefabs/MP/Modes/Conflict/`, `GameData/UI/layouts/Campaign/`,
+   `HUD/CampaignMP/`, `Tasks/Conflict*`, the deploy menu and the map) for how a
+   persistent multiplayer mode is assembled in this engine: its prefabs, layouts,
+   menus, HUD elements and player flows are the closest thing to Klondike that ships
+   with the game, and are the first place to look for a prefab, a layout or a UI flow.
+4. Lite Lobby (`lite-lobby-ar/`), the community's shipped addon, for patterns already
    proven on this community's servers at 127 players.
 
 Rules:
@@ -151,6 +156,14 @@ contracts. This boundary runs through every feature and every plan.
   nothing about the website.
 - The backend contract is versioned. At boot the game checks the version and refuses
   consequential play against a contract it does not know.
+- The backend logs what it decides, not what it sees. One line per decision: every
+  start with the values it runs on, every connect with identity and role, every
+  command with operation id, type, actor, target, outcome and reason code, every
+  configuration change, and every request it could not understand. Health polls and
+  reads are not logged, no event is logged twice, and a line carries only what an
+  operator scanning a console needs to know what happened and why; the audit table
+  holds the detail. Logging that does not answer "what did the backend do and why" is
+  noise and is not written.
 
 ### VII. Comments and Code Hygiene
 
@@ -211,6 +224,35 @@ every non-script asset an agent writes.
   existing vanilla object.
 - Modded `BaseContainerProps` script objects repeat the decorator and base class, or the
   prefab's component list silently truncates.
+
+## User Interface
+
+Every screen, panel, HUD element and notification this project ships is used by
+players and operators who already know Arma Reforger. It must look and behave like
+the game they know, and it must be pleasant to use. A bare technical panel is not an
+acceptable operator interface.
+
+- Follow the visual language of Arma Reforger: the fonts, colours, spacing, button and
+  edit-box behaviour, focus and hover states, list and scroll conventions, and the
+  layout grammar of the vanilla menus. Build screens from the vanilla widget library
+  (`GameData/UI/layouts/WidgetLibrary/`, `WidgetLibraryExtended/`, `Common/`) and the
+  `SCR_*` UI components rather than raw widgets with hand-picked colours.
+- The Conflict game mode is the reference for how a screen of this kind is done in the
+  game (Principle I, source 3): the deploy menu, the map and its side panels, the task
+  list, the base and service panels, the HUD. Before designing a screen, open the
+  Conflict layout that does the closest job and follow its structure; Lite Lobby's
+  screens are the second reference.
+- Design from the user's task, not from the data model. An operator screen groups what
+  the operator does together (look up, act, confirm, see the result) with clear labels,
+  sensible defaults, visible state, readable feedback, and no free-text where a choice
+  or a list will do. A player screen shows what the player needs at the point of use
+  and nothing else.
+- Do not repeat this project's own earlier screens or the agent's own habits as if they
+  were a style. Each screen is judged against the game's screens, not against the
+  previous agent-made one.
+- A screen is reviewed in the running game, at the game's resolution and scale, before
+  it is called done: alignment, clipping, truncated strings in both languages, keyboard
+  and controller focus, and Escape behaviour.
 
 ## Persistence and Data
 
@@ -345,6 +387,13 @@ environment for everything.
   lists the Workbench steps the operator must perform.
 - Ambiguities discovered mid-task are collected as questions for the operator, not
   resolved by assumption (Principle II).
+- Audits and reviews have done criteria. Before an audit, analysis, review or
+  checklist pass starts, it states what "done" means: the principles and rule numbers
+  it checks, the artifacts it covers, and the finding types it reports. It runs once
+  over that scope, reports, and stops. Searching for issues without a stated finish
+  line is forbidden: there is no "one more pass", no widening of scope mid-audit, and
+  no re-audit of what already passed unless the operator names a new criterion. Fewer
+  criteria checked to the end beat many checked forever.
 - Each change is played through in the demo world, using the admin controls it ships
   with, before it is considered done; scale-sensitive changes are additionally measured
   at the target player, item, vehicle, and storage counts. Telemetry (RPC rate,
@@ -387,4 +436,4 @@ The operator ratifies every amendment. Rules in `RULES.md` and constraints in
 `TECHNICAL-DESIGN.md` change through their own source order; this document only
 changes when the way of working changes.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-03
+**Version**: 1.2.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-04

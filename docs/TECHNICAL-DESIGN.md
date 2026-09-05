@@ -1,4 +1,4 @@
-# Triad: Klondike — Launch Technical Design (v1.0)
+# Triad: Klondike — Launch Technical Design (v1.1)
 
 This document is the implementation contract behind `RULES.md`. It is English-only,
 is not player-facing, and does not become a second rulebook. Its job is to define the
@@ -37,6 +37,9 @@ Terms used here:
 - **world entity** — a replicated Enfusion entity such as a character, item, vehicle,
   corpse, or structure.
 - **logical record** — server state such as a wallet, bid, registration, or lease.
+- **local backend** — the service on the game server's machine that is the system of
+  record for every logical record. The game calls it over the loopback interface; it
+  never pushes, and it never listens on a public interface.
 
 ## 2. Runtime Architecture and Authority
 
@@ -89,6 +92,11 @@ services, even if several live on one game-mode component initially:
 There is no faction-economy service, item-provenance service, dynamic market, general
 quest framework, vehicle-insurance framework, or separate prestige currency.
 
+Every service that owns logical records is backed by the local backend. The game-side
+service validates what only the game can see, sends one typed command, and applies the
+physical effect after acceptance (section 4.2). Reconnect, safe zone and aggression,
+mines and cutting, and world registry are game-side services over the physical world.
+
 ### 2.3 Stable identities and revisions
 
 Use stable, namespaced ids for players, Vakhtas, weeks, mines, working faces, safe
@@ -126,18 +134,21 @@ zone correction must not move an existing sale or bid into a different interval.
 The launch architecture is not substrate-neutral:
 
 1. the dedicated game server owns all live gameplay authority;
-2. Reforger's native `PersistenceSystem` stores both one custom logical state root and
-   the persisted physical world in the same save bundle;
-3. the launch cockpit is an in-game admin UI over owner-to-server RPCs;
-4. a narrow custom RCON namespace exposes emergency and automation commands; and
-5. an external host service manager owns process restart, cold backups, restore, logs,
-   and deployment.
+2. the local backend stores every logical record and answers every consequential
+   command over the loopback interface;
+3. Reforger's native `PersistenceSystem` stores the physical world and the stable ids
+   that link it to backend records;
+4. the launch cockpit is an in-game admin UI over owner-to-server RPCs;
+5. a narrow custom RCON namespace exposes emergency and automation commands; and
+6. an external host service manager owns process restart, cold backups, restore, logs,
+   and deployment of both the game server and the local backend.
 
-`$profile` JSON may hold server configuration or an export spool. A website or SQLite
-database may receive read-only exports later. None is a second source of truth for
-wallets, items, bids, leases, registrations, results, or world state at launch. The
-game script exposes no assumed inbound HTTP server, and normal play does not depend on
-an external web request succeeding.
+`$profile` JSON may hold server configuration. A website synchronises with the local
+backend, never with the game, and is read-only with respect to the game. Neither is a
+second source of truth for wallets, bids, leases, registrations, results, or world
+state. The game script exposes no inbound HTTP server; the game is always the caller,
+and when the local backend does not answer, consequential commands are refused
+(section 4.2) while ordinary play continues.
 
 ## 3. Configuration Contract
 
@@ -171,8 +182,8 @@ The versioned configuration must cover at least:
   launch Storage Expansion definition, its direct personal-money price and capacity
   bonus, and lease-loss module compensation;
 - auction schedules, minimum bids, eligibility, lot definitions, and naming targets;
-- checkpoint interval, strict-batch maximum wait/count, queue/backpressure limits and
-  measured save-cost operating thresholds, receipt/audit retention, backup schedule,
+- checkpoint interval, backend answer-time limit, readiness re-check interval,
+  receipt/audit retention, backup schedule,
   replication page sizes, cockpit role assignments, and the RCON command allowlist.
 
 Authored world records use stable ids and explicit activation flags. Mine count, face
@@ -239,33 +250,33 @@ withdrawal-only overflow rather than deleting items.
 
 ## 4. Persistence, Transactions, and Recovery
 
-Use native Reforger persistence as the only gameplay store. Add one versioned
-`TK_KlondikeState : PersistentState` to the mission persistence configuration for the
-logical records below. Assign it to a collection included in the same `WorldState`
-bundle as persisted characters, vehicles, structures, storages, items, and their child
-graphs. Stable UUID references connect logical registrations to physical records.
+Two stores, one fixed split. The local backend is the system of record for the logical
+records in section 4.1; it keeps them durably across its own restarts and answers every
+consequential command with accepted, refused with a stable reason, or already applied.
+Native Reforger persistence stores the physical world only: characters, vehicles,
+structures, storages, items and their child graphs, plus the stable ids that link them
+to backend records. No fact is owned by both stores; the linking id is the only thing
+they share.
 
 One checkpoint coordinator owns every automatic, cockpit-requested, shutdown, and
-lifecycle save. `SaveGameManager.RequestSavePoint` is a whole-world operation, so the
-coordinator never starts one per low-level state change and never allows overlapping
-saves. It owns a bounded strict-operation queue, combines eligible consequential
-commands into configured short commit batches, observes the completion callback, and
-publishes the last successful save id/time, current/in-flight batch, queue depth,
-oldest wait, save duration, failures, and backpressure state. It also prevents a save
-from capturing the middle of a domain transition. Once the queue or measured operating
-threshold is reached, new consequential commands fail before mutation with retryable
-`PersistenceBusy`; clients never guess that a save succeeded.
+lifecycle save of the physical world. `SaveGameManager.RequestSavePoint` is a
+whole-world operation, so the coordinator never starts one per low-level state change,
+never allows overlapping saves, prevents a save from capturing the middle of a physical
+transition, and publishes the last successful save id/time, save duration and failures
+to the cockpit. It does not gate consequential commands; the local backend does.
 
 Do not treat `PersistenceSystem.Save()` as durable by itself: it only stages data until
 the storage is flushed. Do not call `CommitStorage()` ad hoc as a transaction primitive;
 the engine explicitly warns that misuse can create inconsistent save points. `$profile`
 file writes have no proven atomic rename, fsync, or cross-record transaction and are
-therefore unsuitable as the authoritative economy.
+never a store for money, contracts, or audit.
 
 ### 4.1 Durable records
 
-Every serialized record begins with a schema version and supports explicit migration.
-The minimum durable model is:
+Every record begins with a schema version and supports explicit migration. The records
+below live in the local backend, except `ReconnectState`, which the game keeps beside
+the retained character it describes, and the native storage roots that `SecureStorage`
+references. The minimum durable model is:
 
 | Record | Essential data | Lifecycle |
 |---|---|---|
@@ -296,70 +307,64 @@ existing at the moment they are loaded.
 
 ### 4.2 Commit model
 
-Within a running server, each typed command is one authoritative main-thread state
-transition over all affected aggregates. Locks and expected revisions prevent another
-command or checkpoint from observing a half-applied transition. This is an in-process
-commit boundary, not a claim that Enfusion supplies SQL transactions.
+Within a running server, each typed command is validated on the main thread before it
+leaves the game: identity readiness, permission, expected revisions, configuration
+revision, and the physical item/entity state the backend cannot see. The command then
+goes to the local backend as one call carrying the fields of section 2.1. The backend
+applies it atomically against its records and answers accepted with the result and a
+receipt, refused with a stable reason and the current authoritative value, or already
+applied with the recorded result. The game applies the physical effect (item creation
+or removal, cargo transfer, deployment, possession) only after acceptance, and never on
+a late, missing, or malformed answer.
 
-Consequential commands keep their operation id and terminal result in the custom state.
-Commands whose acknowledged result must not disappear use the checkpoint coordinator:
-
-1. after UUID readiness, validate identity, revisions, configuration, physical
-   item/entity state, and capacity; reserve/close the affected aggregates and enqueue
-   the operation without exposing a success result;
-2. close a strict batch at the configured maximum wait or operation count, revalidate
-   every queued command in deterministic order, and reject any command made stale by an
-   earlier member of that batch;
-3. apply each accepted command's complete in-memory logical and physical transition and
-   record its individual result and stage in `TK_KlondikeState`;
-4. request one native blocking `WorldState` save point for the complete batch;
-5. acknowledge each result and reopen its aggregates only from the successful save
-   callback; and
-6. if saving fails, acknowledge nothing, admit no conflicting mutation, and retain the
-   batch for controlled retry or restart recovery rather than guess which effects are
-   durable.
-
-Use that strict path for NPC sales and purchases, recovery-job completion and payout,
-direct money transfers, bid money reservation and settlement, direct Storage Expansion
+Use that path for NPC sales and purchases, recovery-job completion and payout, direct
+money transfers, bid money reservation and settlement, direct Storage Expansion
 purchase/removal compensation, registered-vehicle deployment/return/destruction and
-cargo finalization, faction change, operator value compensation, and the wipe. One
-checkpoint may serve the whole batch only because every command retains its own
-operation result and no client receives success early. Queue length, maximum wait,
-batch size, save time and rejection rate are bounded and visible in the cockpit; load
-shedding happens before value mutation.
+cargo finalization, faction change, operator value compensation, and the wipe.
 
-Do not invent a numeric save budget in this document before measuring the packaged
-mission. The mandatory persistence spike measures whole-world checkpoint duration and
-sustainable strict-command throughput at the target player, item, vehicle and storage
-counts, then supplies the launch configuration and an operational alarm/backpressure
-threshold. If the measured system cannot sustain the required traffic even with safe
-batching, launch is blocked until the durability architecture is deliberately changed;
-an unflushed `$profile` or custom-state journal is not presented as durable fallback.
+The operation id makes retry safe. When the answer does not arrive within the configured
+limit, the player sees a refusal naming the reason and nothing is applied; the same
+operation id sent again resolves to accepted, refused, or already applied. A repeated
+operation id with a different payload is refused and recorded as a security event. The
+game never journals a consequential command for later replay: while the backend is
+unreachable or its contract version is unknown, consequential commands are refused and
+ordinary play continues.
 
-Long multi-stage lifecycle jobs additionally store a small stage journal in
-`TK_KlondikeState` and checkpoint between irreversible stages. Recovery finishes the
-recorded next stage or applies its documented compensation; it never blindly repeats
-item creation/removal, cargo transfer, payout, reservation, or deployment.
+A physical effect that must follow acceptance and can itself fail (spawning a vehicle,
+moving cargo, removing an item) is recorded on the backend record as a stage, and boot
+reconciliation (section 4.3) finishes the recorded next stage or applies its documented
+compensation by operation id. Recovery never blindly repeats item creation/removal,
+cargo transfer, payout, reservation, or deployment.
 
 Cutting and ordinary secure-storage movement use server-main-thread validation,
-aggregate revisions, and normal periodic world checkpoints. They do not create a
-durable journal or blocking save for every item move. An abrupt process loss may roll
-these ordinary actions back to the last successful checkpoint, but the restored world
-must be one consistent old snapshot and must not duplicate a live result.
+aggregate revisions, and normal periodic world checkpoints. They do not create a backend
+call for every item move. An abrupt process loss may roll these ordinary actions back
+to the last successful checkpoint, but the restored world must be one consistent old
+snapshot and must not duplicate a live result.
+
+Do not write a numeric answer-time limit, re-check interval, or command rate into this
+document before the backend spike (section 19, item 4) measures it on the packaged
+mission with the backend running alongside.
 
 ### 4.3 Boot sequence and reconciliation
 
 Gameplay remains closed while boot performs:
 
 1. schema and configuration validation;
-2. unambiguous selection and load of the current Vakhta save point;
-3. lifecycle-stage and pending strict-checkpoint recovery;
-4. reconciliation of persisted world entities with logical vehicle registrations,
+2. the local backend contract-version check; an unreachable backend or an unknown
+   contract version leaves the boundary not ready and boot continues. Readiness is
+   re-checked on the configured interval until it recovers; once boot has finished,
+   players may enter while consequential commands are refused;
+3. unambiguous selection and load of the current Vakhta save point of the physical
+   world;
+4. recovery, by operation id, of accepted operations whose physical stage is
+   incomplete;
+5. reconciliation of persisted world entities with backend vehicle registrations,
    retained characters, public cargo crates, secure item graphs, and authored plot-
    module presentation bindings;
-5. catch-up of overdue week, auction, lease, alarm, cooldown, and cleanup transitions;
-6. invariant checks and a new checkpoint;
-7. publication of server-ready state.
+6. catch-up of overdue week, auction, lease, alarm, cooldown, and cleanup transitions;
+7. invariant checks and a new checkpoint;
+8. publication of server-ready state.
 
 Catch-up is deterministic and idempotent. If several boundaries elapsed during an
 outage, process them in chronological order while using their stored ids. A missing or
@@ -496,7 +501,7 @@ at a time. A swap is not a special path: it runs the section 6.3 departure
 classification for the character being left (save-and-remove inside a protected city
 without Aggressor state, otherwise a retained body with the ordinary deadline) and then
 the ordinary spawn or reconnect path for the other character. A swap is refused while
-the current character has a pending strict operation. Whitelist grant is an audited
+the current character has a pending consequential operation. Whitelist grant is an audited
 cockpit command that creates the Garrison record and its zero-balance wallet; whitelist
 revocation is an audited resumable job that removes the Garrison character, its carried
 equipment, and its wallet, and touches nothing on the regular record. Neither command
@@ -1047,7 +1052,7 @@ exact deployment. Cargo removed with an abandoned live vehicle is not returned t
 owner, storage, garage, or a public crate. The owner is told the loss reason and
 restoration price.
 
-If the pre-delete hook must defer deletion until the strict finalization checkpoint
+If the pre-delete hook must defer deletion until cargo finalization
 completes, explicitly reinsert/retrack the entity with `GarbageSystem` after declining
 that deletion attempt. The native pre-delete path stops tracking even when a listener
 vetoes removal; assuming it will retry by itself creates a permanent deployed-slot
@@ -1107,7 +1112,7 @@ generic construction catalog, free-placement editor, construction-material econo
 speculative multi-module framework. Any later module needs its own game-design and
 technical decision before it enters this contract.
 
-The leaseholder buys the expansion directly at the authored console. It is a strict,
+The leaseholder buys the expansion directly at the authored console. It is an
 idempotent personal-money command, not an inventory item, kit, blueprint, world pickup,
 or tradeable object. Validate audited owner, active lease/revision/expiry, empty socket,
 the single configured definition and price revision, spendable balance, Aggressor state,
@@ -1411,16 +1416,17 @@ Global destructive actions additionally require a verified backup.
 
 Resolve staff permissions from the server-audited stable player UUID. Prefer the
 engine's UUID-based role API after proving it on the production dedicated server; if
-that backend feature is unavailable, use an operator-owned UUID-to-role configuration
-and persist temporary assignments in `TK_KlondikeState`. A transient connection id,
+that platform feature is unavailable, use an operator-owned UUID-to-role configuration
+and keep temporary assignments in the local backend. A transient connection id,
 display name, faction, or client claim is never authority.
 
 ### 16.2 Required views and commands
 
 Launch coverage includes:
 
-- server health, save/checkpoint state and duration, strict-batch/queue depth and oldest
-  wait, persistence backpressure, replication health, and configuration revision;
+- server health, local backend readiness and contract version, answer times and
+  refusal counts, physical-world save state and duration, replication health, and
+  configuration revision;
 - players, audited UUID readiness, projected faction counts/limits, invitation state,
   faction/whitelist state, online/dead/retained character state, Aggressor expiry,
   Garrison-boundary grace, moderation notes, and bans;
@@ -1472,19 +1478,18 @@ Engine transitions may request a graceful restart or termination but cannot rela
 crashed process. Obsolete `DSSession` restart/shutdown calls are not an implementation
 path.
 
-A later website may display exported leaderboards/audit summaries or place commands
-through an authenticated RCON sidecar. It is outside the launch authority path and may
-never mutate a database behind the running game server.
+A later website synchronises with the local backend, never with the game, and is
+read-only with respect to the game. It is outside the launch authority path; anything
+it changes goes through the same validated domain commands.
 
 ### 16.4 Audit and security events
 
 Append an application-append-only audit entry for every cockpit command and high-value
 mutation. Store actor, role, reason, command/operation id, target, request, expected and
 actual revision, before/after references or hashes, time, outcome, and correlation id.
-Corrections append; they do not alter the original entry. Replicate the audit stream to
-off-host retention through the host log/audit shipper so an in-process operator cannot
-silently rewrite the only copy. A local `$profile` audit spool is a delivery buffer and
-export, not authoritative gameplay state.
+Corrections append; they do not alter the original entry. The audit trail lives in the
+local backend and is shipped to off-host retention by the host log/audit shipper so an
+in-process operator cannot silently rewrite the only copy.
 
 High-value security events include duplicate operation ids with changed payloads,
 garage spawn races, impossible wallet/reservation states, Garrison equipment or money
@@ -1495,8 +1500,8 @@ aggregated by actor/reason/target, and sampled; a hostile client cannot force an
 unbounded durable-write stream.
 
 Operational telemetry should expose rates and stuck-state ages without becoming game
-authority: failed persistence, pending strict-checkpoint commands, incomplete lifecycle
-stages, reconcile incidents, retained bodies, transaction rejection reasons, cargo-
+authority: failed physical-world saves, backend refusals and timeouts, incomplete physical stages
+of accepted operations, reconcile incidents, retained bodies, transaction rejection reasons, cargo-
 finalization failures, unreleased auction reservations, overdue rollovers, and backup
 age.
 
@@ -1526,7 +1531,7 @@ purge session persistence.
 The wipe workflow is:
 
 1. enter maintenance and stop new joins and gameplay mutations;
-2. finish or explicitly recover pending strict-checkpoint commands and incomplete
+2. finish or explicitly recover pending consequential commands and incomplete
    lifecycle stages;
 3. lock due auctions and resolve every reservation according to the published policy;
 4. create a blocking checkpoint, request graceful termination, let the host supervisor
@@ -1601,8 +1606,9 @@ them against the engine version used to ship.
   economy database by itself.
 - `Arma-Reforger-Script-Diff/GameData/Configs/Systems/Persistence/BaseSetup.conf` and
   `Common.conf` define the native save-game database, collections, and shared
-  `WorldState` bundle for characters, vehicles, items, structures, and storages. Add
-  Klondike's custom `PersistentState` to this model instead of a parallel JSON store.
+  `WorldState` bundle for characters, vehicles, items, structures, and storages.
+  Klondike's physical-world records join this model; logical records live in the local
+  backend, never in a parallel `$profile` store.
 - `Arma-Reforger-Script-Diff/scripts/Game/Plugins/Persistence/System/Serializers/States/SCR_ReconnectSerializer.c`
   is a concrete custom-state/schema/UUID-reference precedent, but its default
   post-load cleanup deletes saved player characters whose owners do not reconnect within
@@ -1666,9 +1672,9 @@ them against the engine version used to ship.
 
 ### 18.5 Identity, markers, and statistics
 
-- `lite-lobby-ar/Lite Lobby/scripts/game/Core/LL_PlayerVerification.c` is evidence for
-  stable player verification integration; transient connection ids remain unsuitable
-  for ownership.
+- A shipped lobby addon already verifies players against a website over `RestContext`
+  keyed by the audited identity, which is evidence for stable player verification
+  integration; transient connection ids remain unsuitable for ownership.
 - `Arma-Reforger-Script-Diff/scripts/Game/Utilities/SCR_PlayerIdentityUtils.c` states
   that the UUID lookup is server-only and valid only after `OnPlayerAuditSuccess`.
   Every identity-keyed Klondike request uses that lifecycle gate.
@@ -1715,8 +1721,10 @@ them against the engine version used to ship.
   provides graceful transition requests. A separate host service manager remains
   responsible for actually relaunching a stopped or crashed process.
 - Runtime `RestContext` is an outbound client with a documented small-payload limit; no
-  inbound script HTTP listener was found. It is optional for export and does not form
-  the launch cockpit or persistence path.
+  inbound script HTTP listener was found. It is the launch path to the local backend
+  for every logical record: the game calls and polls, the backend never pushes. The
+  proven server-side call pattern: callbacks strong-referenced until the answer, one
+  timeout, the HTTP code judged in both callbacks, fail closed.
 
 ## 19. Required Technical Spikes
 
@@ -1735,18 +1743,18 @@ Resolve these with isolated prototypes before building dependent content:
    overflow. With two or more owners using adjacent terminals, prove that only the
    authenticated owner receives that pool's item identities, contents and deltas; a
    stock client must not discover another pool through vicinity replication.
-4. **Batched value-operation durability and performance:** prove checkpoint-gated NPC
-   sale/purchase, recovery completion/payout, money transfer, bid reservation/
-   settlement, Storage Expansion purchase/removal compensation, registered-vehicle
-   transitions/cargo finalization, faction change, operator compensation and wipe never
-   acknowledge a result absent after restart and never duplicate money or property.
-   Force process loss before batch close, during the blocking whole-world save, and
-   after its callback. At target player/item/vehicle/storage counts, measure save
-   duration and sustainable strict-command rate; prove one save in flight, bounded wait/
-   count, deterministic batch ordering, pre-mutation backpressure and cockpit telemetry,
-   then set the launch operating values from those measurements. For routine extraction
-   and secure storage, prove revision safety, consistent checkpoints, no duplicate item
-   graph, and the documented bounded rollback instead of a durable transaction per move.
+4. **Backend call durability and performance:** prove NPC sale/purchase, recovery
+   completion/payout, money transfer, bid reservation/settlement, Storage Expansion
+   purchase/removal compensation, registered-vehicle transitions/cargo finalization,
+   faction change, operator compensation and wipe never acknowledge a result the local
+   backend has not recorded and never duplicate money or property. Force game-process
+   loss before the call, while the answer is pending, and after acceptance but before
+   the physical effect; force backend loss at the same points. At target player/item/
+   vehicle/storage counts, measure answer time and sustainable command rate over the
+   loopback interface, then set the launch answer-time limit and re-check interval from
+   those measurements. For routine extraction and secure storage, prove revision
+   safety, consistent physical checkpoints, no duplicate item graph, and the documented
+   bounded rollback instead of a backend call per move.
 5. **Aggressor attribution:** cover firearm, vehicle weapon, grenade, release/trigger/
    remote detonation of an offensive explosive, detonator-action controller position,
    delayed damage, damage to any other player regardless of faction, and damage to
@@ -1788,9 +1796,9 @@ Resolve these with isolated prototypes before building dependent content:
     free-placement, build, or dismantle path reaches the shell or socket. Purchase,
     compensation, stacking, renewal, and cap-decrease behaviour are domain tests in
     section 20.1, not engine questions.
-11. **Native persistence and unattended resume:** register versioned
-    `TK_KlondikeState` and nested physical storage/items in one `WorldState`, force a
-    kill during save, and prove restart selects either the prior or new complete valid
+11. **Native persistence and unattended resume:** register the physical-world records
+    (retained characters, storage roots and items, vehicles, structures) in one
+    `WorldState`, force a kill during save, and prove restart selects either the prior or new complete valid
     save. Prove the exact dedicated-server save selection, compatibility/migration,
     and fail-closed behaviour; do not invent an unverified command-line flag.
 12. **In-game cockpit:** prove post-audit stable-UUID RBAC, owner RPC requests, scoped pagination,
@@ -1838,7 +1846,7 @@ Minimum coverage includes:
   assignment, and no repeated starter grant. For the whitelisted two-character model,
   cover Garrison selection refused to non-whitelisted identities, no double counting in
   any roster or board, a swap leaving a retained body outside a city and a clean save
-  inside one, swap refusal during a pending strict operation, grant and revocation
+  inside one, swap refusal during a pending consequential operation, grant and revocation
   touching only the Garrison record, and faction change touching only the regular one;
 - safe-zone target/source protection regardless of faction, every Aggressor
   trigger/non-trigger, outward-projectile rejection, controller position for remote
@@ -1890,9 +1898,9 @@ Minimum coverage includes:
 - sale/week boundary serialization, shared-rank output, faction-at-sale aggregate,
   carryover cap and excluded ledger reasons, rollover retry, export, and full wipe at
   every checkpoint;
-- strict-batch deterministic ordering, idempotent results, one whole-world save in
-  flight, bounded queue/backpressure before mutation, save-failure retry, and cockpit
-  metrics under the measured launch workload.
+- idempotent operation results, refusal with no physical effect on a missing or late
+  backend answer, physical-stage recovery by operation id, and cockpit metrics under
+  the measured launch workload.
 
 ### 20.2 Multiplayer and adversarial tests
 
